@@ -20,3 +20,10 @@ Operações devem ser desenhadas para ser usadas via API rest, usando django res
 ### Regras!
 
 1. regras devem estar no nível mais baixo possivel, neste caso nos models, para que seja possível usar o django admin para gerenciar os dados.
+2. use o swagger para descrever as regras.
+3. os dados não devem ser deletados, mas colocado a data em que foi cancelado e todos os outros objetos devem respeitar isso.
+
+
+### Ideias
+
+1. criar um middleware para controlar as requisições?
