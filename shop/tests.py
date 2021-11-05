@@ -1,5 +1,7 @@
+from datetime import timezone
 from unittest.case import SkipTest
 from django.test import TestCase
+from django.utils import timezone as djangoTimezone
 
 # Create your tests here.
 
@@ -10,6 +12,72 @@ from shop.models.DocumentProduct import DocumentProduct
 from shop.models.Entity import Entity
 from shop.models.Product import Product
 from shop.models.Stock import Stock
+
+class AutoCreate:
+
+    def __init__(self,name):
+        self.name = name
+    
+    def createCompany(self,name=None):
+        if name is None:
+            name = self.name
+        company = Company.objects.create(name=name)
+        return company
+
+    def createAndDeleteCompany(self,name=None):
+        if name is None:
+            name = self.name
+        company = self.createCompany(name)
+        
+        company = Company.objects.get(id=company.id)
+        company.delete()
+        return company        
+
+    def createDeposit(self,name=None):
+        if name is None:
+            name = self.name
+        company = self.createCompany(name)
+        deposit = Deposit.objects.create(name=name,company=company)
+        return deposit
+        
+    def createEntity(self,name=None):
+        if name is None:
+            name = self.name
+        entity = Entity.objects.create(name=name
+                                        ,identifier=name + '_123456'
+                                        ,identifierType='JU'
+                                        ,entityType='FOR')
+        return entity
+
+    def createDocument(self,name=None,documentType='IN'):
+        if name is None:
+            name = self.name
+        deposit = self.createDeposit(name)
+        entity = self.createEntity(name)
+        document = Document.objects.create(key=name
+                            ,deposit=deposit
+                            ,entity=entity
+                            ,documentType=documentType)
+        return document
+    
+    def createDocumentProduct(self,name=None):
+        if name is None:
+            name = self.name
+        document = self.createDocument(name)
+        documentProduct = DocumentProduct.objects.create(document=document
+                                                        ,product=self.product
+                                                        ,amount=1
+                                                        ,value=1)
+        return documentProduct
+    
+    def fullDocumentOperation(self,name=None):
+        if name is None:
+            name = self.name
+        documentProduct = self.createDocumentProduct(name)
+        document = Document.objects.get(id=documentProduct.document.id)
+        document.isOpen = False
+        document.save()
+        return document
 
 class TestCase_BaseModel(TestCase):
 
@@ -103,27 +171,15 @@ class TestCase_001_ModelCompany(TestCase_BaseModel):
         self.skipTest('empty')
     
     def test_006_delete_company_with_document_open(self):
-        company = Company.objects.create(name='test_006')
-        deposit = Deposit.objects.create(name='test_006'
-                            ,company=company)
-        entity = Entity.objects.create(name='test_006'
-                            ,identifier='123456'
-                            ,identifierType='JU'
-                            ,entityType='FOR')
-        Document.objects.create(key='test_006'
-                            ,deposit=deposit
-                            ,entity=entity
-                            ,documentType='IN')
+        auto = AutoCreate(name='test_006')
+        document = auto.createDocument()
 
         company = Company.objects.get(name='test_006')
         company.delete()
 
         company = Company.objects.get(name='test_006')
         self.assertIsNone(company.deletedAt)
-
-    def test_007_delete_company_with_deposit_is_stock(self):
-        self.skipTest('empty')
-
+       
     def test_008_delete_company_with_deposit_is_finance_open(self):
         self.skipTest('empty')
     
@@ -140,7 +196,33 @@ class TestCase_001_ModelCompany(TestCase_BaseModel):
         self.skipTest('empty')
 
     def test_013_update_fields_with_after_deleted(self):
-        self.skipTest('empty')
+        auto = AutoCreate(name='test_013')
+        companyAux = auto.createAndDeleteCompany()
+
+        company = Company.objects.get(name='test_013')
+        company.name = 'test_013_update'
+        self.assertRaises(Exception,company,createdAt = djangoTimezone.now())
+        company.updatedAt = djangoTimezone.now()
+        company.deletedAt = djangoTimezone.now()
+        self.assertRaises(Exception,company.save)
+
+        company = Company.objects.get(id=company.id)
+
+        self.assertEqual(companyAux.name,company.name)
+        self.assertEqual(companyAux.createdAt,company.createdAt)
+        self.assertEqual(companyAux.updatedAt,company.updatedAt)
+        self.assertEqual(companyAux.deletedAt,company.deletedAt)
+
+    def test_014_return_deleted_company(self):
+        auto = AutoCreate(name='test_014')
+        companyAux = auto.createAndDeleteCompany()
+
+        company = Company.objects.get(id=companyAux.id)
+        company.deletedAt = None
+        company.save()
+
+        company = Company.objects.get(id=companyAux.id)
+        self.assertIsNone(company.deletedAt)
 
 
 class TestCase_002_ModelDeposit(TestCase):

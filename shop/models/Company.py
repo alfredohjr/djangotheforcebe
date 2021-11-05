@@ -1,6 +1,8 @@
 from django.db import models
 from django.utils import timezone
 import decimal
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
 
 from shop.models.Deposit import Deposit
 from shop.models.Document import Document
@@ -33,3 +35,15 @@ class Company(models.Model):
         self.deletedAt = timezone.now()
         self.save()
         return True
+
+
+@receiver(pre_save,sender=Company)
+def pre_save_company(sender, instance, *args, **kwargs):
+
+    company = Company.objects.filter(id=instance.id)
+    if company:
+        if instance.deletedAt is None and company[0].deletedAt:
+            return True
+
+        if company[0].deletedAt:
+            raise Exception('company is deleted, to alter this, reopen.')
