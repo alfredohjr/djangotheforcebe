@@ -344,6 +344,9 @@ class TestCase_004_ModelProduct(TestCase):
     def test_009_update_fields_with_after_deleted(self):
         self.skipTest('empty')
 
+    def test_010_product_register_in_log_table(self):
+        self.skipTest('empty')
+
 
 class TestCase_005_ModelDocument(TestCase):
 
@@ -377,10 +380,10 @@ class TestCase_005_ModelDocument(TestCase):
     def test_009_create_document_with_isOpen_false(self):
         self.skipTest('empty')
 
-    def test_010_create_document_if_entity_is_CLI_documentType_is_OUT(self):
+    def test_010_create_document_if_entity_is_CLI_documentType_is_IN(self):
         self.skipTest('empty')
 
-    def test_011_create_document_if_entity_is_FOR_documentType_is_IN(self):
+    def test_011_create_document_if_entity_is_FOR_documentType_is_OUT(self):
         self.skipTest('empty')
 
     def test_012_check_product_of_documents_isOpen_is_equals(self):
@@ -396,6 +399,9 @@ class TestCase_005_ModelDocument(TestCase):
         self.skipTest('empty')
 
     def test_016_update_fields_with_after_deleted(self):
+        self.skipTest('empty')
+
+    def test_010_document_register_in_log_table(self):
         self.skipTest('empty')
 
 
@@ -446,6 +452,15 @@ class TestCase_006_ModelDocumentProduct(TestCase):
     def test_010_update_fields_with_after_deleted(self):
         self.skipTest('empty')
 
+    def test_010_documentProduct_register_in_log_table(self):
+        self.skipTest('empty')
+
+    def test_011_value_is_zero(self):
+        self.skipTest('empty')
+
+    def test_011_amount_is_zero(self):
+        self.skipTest('empty')
+
 
 class TestCase_007_ModelPrice(TestCase_BaseModel):
     
@@ -486,6 +501,12 @@ class TestCase_007_ModelPrice(TestCase_BaseModel):
         self.skipTest('empty')
 
     def test_011_update_fields_with_after_deleted(self):
+        self.skipTest('empty')
+
+    def test_010_price_register_in_log_table(self):
+        self.skipTest('empty')
+    
+    def test_011_hierarchy_of_prices(self):
         self.skipTest('empty')
 
 
@@ -533,26 +554,41 @@ class TestCase_008_ModelStock(TestCase):
     def test_012_update_fields_with_after_deleted(self):
         self.skipTest('empty')
 
+    def test_010_product_register_in_log_table(self):
+        self.skipTest('empty')
+
 
 class TestCase_009_ModelStockMovement(TestCase):
-    SkipTest('empty')
+    
+    def test_001_dont_update_register(self):
+        self.skipTest('empty')
 
 
 class TestCase_010_ModelCompanyLog(TestCase):
-    SkipTest('empty')
+    
+    def test_001_dont_update_log_register(self):
+        self.skipTest('empty')
 
 
 class TestCase_011_ModelDepositLog(TestCase):
-    SkipTest('empty')
+
+    def test_001_dont_update_log_register(self):
+        self.skipTest('empty')
 
 
 class TestCase_012_ModelDocumentLog(TestCase):
-    SkipTest('empty')
+
+    def test_001_dont_update_log_register(self):
+        self.skipTest('empty')
 
 
 class TestCase_013_ModelEntityLog(TestCase):
-    SkipTest('empty')
+
+    def test_001_dont_update_log_register(self):
+        self.skipTest('empty')
 
 
 class TestCase_014_ModelProductLog(TestCase):
-    SkipTest('empty')
+
+    def test_001_dont_update_log_register(self):
+        self.skipTest('empty')
