@@ -50,7 +50,7 @@ def pre_save_company(sender, instance, *args, **kwargs):
             return True
 
         if company[0].deletedAt:
-            raise Exception('company is deleted, to alter this, reopen.')
+            raise ValidationError('company is deleted, to alter this, reopen.')
 
 
 @receiver(post_save,sender=Company)

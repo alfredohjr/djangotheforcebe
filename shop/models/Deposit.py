@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
-from django.db.models.signals import pre_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 
 from shop.models.Stock import Stock
@@ -52,3 +52,21 @@ def pre_save_deposit(sender, instance, *args, **kwargs):
     
     if instance.company.deletedAt != None:
         raise ValidationError('company is inactive, please check.')
+
+    deposit = Deposit.objects.filter(id=instance.id)
+    if deposit:
+        if instance.deletedAt is None and deposit[0].deletedAt:
+            return True
+
+        if deposit[0].deletedAt:
+            raise ValidationError('deposit is deleted, to alter this, reopen.')
+
+
+@receiver(post_save,sender=Deposit)
+def post_save_company(sender, instance, created, *args, **kwargs):
+    if created:
+        if instance.deletedAt != None:
+            company = Deposit.objects.get(id=instance.id)
+            company.deletedAt = None
+            company.save()
+            return True
