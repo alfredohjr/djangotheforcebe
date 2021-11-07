@@ -1,5 +1,8 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
 
 from shop.models.Stock import Stock
 
@@ -32,6 +35,20 @@ class Deposit(models.Model):
         unique_together = (('name'),)
 
     def delete(self):
+        stocks = Stock.objects.filter(deposit__id=self.id)
+        for stock in stocks:
+            if stock.amount != 0:
+                return False
+
         self.deletedAt = timezone.now()
         self.save()
         return True
+
+@receiver(pre_save,sender=Deposit)
+def pre_save_deposit(sender, instance, *args, **kwargs):
+    
+    if len(instance.name) < 10:
+        raise ValidationError('minimum size is 10.')
+    
+    if instance.company.deletedAt != None:
+        raise ValidationError('company is inactive, please check.')

@@ -1,8 +1,9 @@
 from django.db import models
 from django.utils import timezone
 import decimal
-from django.db.models.signals import pre_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
+from django.core.exceptions import ValidationError
 
 from shop.models.Deposit import Deposit
 from shop.models.Document import Document
@@ -40,6 +41,9 @@ class Company(models.Model):
 @receiver(pre_save,sender=Company)
 def pre_save_company(sender, instance, *args, **kwargs):
 
+    if len(instance.name.strip()) < 10:
+        raise ValidationError('minumum size is 10')
+
     company = Company.objects.filter(id=instance.id)
     if company:
         if instance.deletedAt is None and company[0].deletedAt:
@@ -47,3 +51,13 @@ def pre_save_company(sender, instance, *args, **kwargs):
 
         if company[0].deletedAt:
             raise Exception('company is deleted, to alter this, reopen.')
+
+
+@receiver(post_save,sender=Company)
+def post_save_company(sender, instance, created, *args, **kwargs):
+    if created:
+        if instance.deletedAt != None:
+            company = Company.objects.get(id=instance.id)
+            company.deletedAt = None
+            company.save()
+            return True

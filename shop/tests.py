@@ -1,5 +1,6 @@
 from datetime import timezone
 from unittest.case import SkipTest
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone as djangoTimezone
 
@@ -49,6 +50,12 @@ class AutoCreate:
                                         ,entityType='FOR')
         return entity
 
+    def createProduct(self,name=None):
+        if name is None:
+            name = self.name
+        product = Product.objects.create(name=name)
+        return product
+
     def createDocument(self,name=None,documentType='IN'):
         if name is None:
             name = self.name
@@ -64,8 +71,9 @@ class AutoCreate:
         if name is None:
             name = self.name
         document = self.createDocument(name)
+        product = self.createProduct(name)
         documentProduct = DocumentProduct.objects.create(document=document
-                                                        ,product=self.product
+                                                        ,product=product
                                                         ,amount=1
                                                         ,value=1)
         return documentProduct
@@ -78,6 +86,7 @@ class AutoCreate:
         document.isOpen = False
         document.save()
         return document
+
 
 class TestCase_BaseModel(TestCase):
 
@@ -127,21 +136,32 @@ class TestCase_001_ModelCompany(TestCase_BaseModel):
         super().setUp()
 
     def test_001_create_company(self):
-        company = Company.objects.get(name='test_company')
-        self.assertEqual(company.name,'test_company')
+        auto = AutoCreate('test_000001')
+        company = auto.createCompany()
+        self.assertEqual(company.name,'test_000001')
         
     def test_002_update_company(self):
-        company = Company.objects.get(name='test_company')
+        auto = AutoCreate('test_000002')
+        company = auto.createCompany()
+
+        company = Company.objects.get(name='test_000002')
         company.name = 'company'
+        self.assertRaises(ValidationError,company.save)
+
+        company = Company.objects.get(name='test_000002')
+        company.name = 'test_000002_001'
         company.save()
-        company = Company.objects.get(name='company')
-        self.assertEqual(company.name,'company')
+
+        company = Company.objects.get(name='test_000002_001')
+        self.assertEqual(company.name,'test_000002_001')
         self.assertLess(company.createdAt,company.updatedAt)
         self.assertIsNot(company.createdAt,company.updatedAt)
 
     def test_003_delete_company_with_product_stock(self):
+        auto = AutoCreate('test_000003')
+        document = auto.createDocument()
 
-        company = Company.objects.get(name='test_company')
+        company = Company.objects.get(name='test_000003')
         company.delete()
         self.assertIsNone(company.deletedAt)
 
@@ -171,13 +191,13 @@ class TestCase_001_ModelCompany(TestCase_BaseModel):
         self.skipTest('empty')
     
     def test_006_delete_company_with_document_open(self):
-        auto = AutoCreate(name='test_006')
+        auto = AutoCreate(name='test_000006')
         document = auto.createDocument()
 
-        company = Company.objects.get(name='test_006')
+        company = Company.objects.get(name='test_000006')
         company.delete()
 
-        company = Company.objects.get(name='test_006')
+        company = Company.objects.get(name='test_000006')
         self.assertIsNone(company.deletedAt)
        
     def test_008_delete_company_with_deposit_is_finance_open(self):
@@ -193,13 +213,17 @@ class TestCase_001_ModelCompany(TestCase_BaseModel):
         self.skipTest('empty')
 
     def test_012_company_size_minimun_of_name_is_10(self):
-        self.skipTest('empty')
+        self.assertRaises(ValidationError,Company.objects.create,name='test_012')
+        
+        auto = AutoCreate('test_000012')
+        company = auto.createCompany()
+        self.assertEqual(company.name,'test_000012')
 
     def test_013_update_fields_with_after_deleted(self):
-        auto = AutoCreate(name='test_013')
+        auto = AutoCreate(name='test_000013')
         companyAux = auto.createAndDeleteCompany()
 
-        company = Company.objects.get(name='test_013')
+        company = Company.objects.get(name='test_000013')
         company.name = 'test_013_update'
         self.assertRaises(Exception,company,createdAt = djangoTimezone.now())
         company.updatedAt = djangoTimezone.now()
@@ -214,7 +238,7 @@ class TestCase_001_ModelCompany(TestCase_BaseModel):
         self.assertEqual(companyAux.deletedAt,company.deletedAt)
 
     def test_014_return_deleted_company(self):
-        auto = AutoCreate(name='test_014')
+        auto = AutoCreate(name='test_000014')
         companyAux = auto.createAndDeleteCompany()
 
         company = Company.objects.get(id=companyAux.id)
@@ -224,26 +248,67 @@ class TestCase_001_ModelCompany(TestCase_BaseModel):
         company = Company.objects.get(id=companyAux.id)
         self.assertIsNone(company.deletedAt)
 
+    def test_015_create_with_deletedAt_not_none(self):
+        company = Company(name = 'test_000015', deletedAt = djangoTimezone.now())
+        company.save()
+
+        company = Company.objects.get(name='test_000015')
+        self.assertIsNone(company.deletedAt)
+
+        Company.objects.create(name = 'test_000015_001', deletedAt = djangoTimezone.now())
+        company = Company.objects.get(name='test_000015_001')
+        self.assertIsNone(company.deletedAt)
+
 
 class TestCase_002_ModelDeposit(TestCase):
 
     def test_001_create_deposit(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000001')
+        auto.createDeposit()
+
+        deposit = Deposit.objects.get(name='test_000001')
+        self.assertEqual(deposit.name,'test_000001')
 
     def test_002_update_deposit(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000002')
+        auto.createDeposit()
+
+        deposit = Deposit.objects.get(name='test_000002')
+        deposit.name = 'test_000002_001'
+        deposit.save()
+
+        deposit = Deposit.objects.get(name='test_000002_001')
+        self.assertEqual(deposit.name,'test_000002_001')
 
     def test_003_delete_deposit_with_product_stock(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000003')
+        auto.fullDocumentOperation()
+
+        deposit = Deposit.objects.get(name='test_000003')
+        deposit.delete()
+
+        deposit = Deposit.objects.get(name='test_000003')
+        self.assertIsNone(deposit.deletedAt)
 
     def test_999_delete_deposit(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000999')
+        deposit = auto.createDeposit()
+
+        deposit = Deposit.objects.get(name='test_000999')
+        deposit.delete()
+
+        deposit = Deposit.objects.get(name='test_000999')
+        self.assertIsNotNone(deposit.deletedAt)
 
     def test_004_delete_deposit_with_product_inventory(self):
         self.skipTest('empty')
     
     def test_005_delete_deposit_with_document_open(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000005')
+        auto.createDocumentProduct()
+
+        deposit = Deposit.objects.get(name='test_000005')
+        self.assertIsNone(deposit.deletedAt)
 
     def test_006_delete_deposit_with_is_finance_open(self):
         self.skipTest('empty')
@@ -258,12 +323,25 @@ class TestCase_002_ModelDeposit(TestCase):
         self.skipTest('empty')
 
     def test_010_deposit_size_minimun_of_name_is_10(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_010')
+        self.assertRaises(ValidationError, auto.createDeposit)
 
     def test_011_create_deposit_with_deleted_company(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000011')
+        company = auto.createCompany()
+
+        company = Company.objects.get(id=company.id)
+        company.delete()
+
+        deposit = Deposit()
+        deposit.company = company
+        deposit.name = 'test_000011'
+        self.assertRaises(ValidationError,deposit.save)
 
     def test_012_update_fields_with_after_deleted(self):
+        self.skipTest('empty')
+    
+    def test_013_create_with_deletedAt_not_none(self):
         self.skipTest('empty')
 
 
@@ -311,6 +389,9 @@ class TestCase_003_ModelEntity(TestCase):
     def test_013_update_fields_with_after_deleted(self):
         self.skipTest('empty')
 
+    def test_014_create_with_deletedAt_not_none(self):
+        self.skipTest('empty')
+
 
 class TestCase_004_ModelProduct(TestCase):
 
@@ -345,6 +426,9 @@ class TestCase_004_ModelProduct(TestCase):
         self.skipTest('empty')
 
     def test_010_product_register_in_log_table(self):
+        self.skipTest('empty')
+
+    def test_011_create_with_deletedAt_not_none(self):
         self.skipTest('empty')
 
 
@@ -404,6 +488,9 @@ class TestCase_005_ModelDocument(TestCase):
     def test_010_document_register_in_log_table(self):
         self.skipTest('empty')
 
+    def test_011_create_with_deletedAt_not_none(self):
+        self.skipTest('empty')
+
 
 class TestCase_006_ModelDocumentProduct(TestCase):
 
@@ -440,25 +527,28 @@ class TestCase_006_ModelDocumentProduct(TestCase):
     def test_010_close_documentProduct_IN_stock_movement_is_correct(self):
         self.skipTest('empty')
 
-    def test_009_close_documentProduct_OUT_stock_is_correct(self):
+    def test_011_close_documentProduct_OUT_stock_is_correct(self):
         self.skipTest('empty')
 
-    def test_010_close_documentProduct_OUT_stock_movement_is_correct(self):
+    def test_012_close_documentProduct_OUT_stock_movement_is_correct(self):
         self.skipTest('empty')
 
-    def test_009_close_documentProduct_price_is_suggested_correct(self):
+    def test_013_close_documentProduct_price_is_suggested_correct(self):
         self.skipTest('empty')
 
-    def test_010_update_fields_with_after_deleted(self):
+    def test_014_update_fields_with_after_deleted(self):
         self.skipTest('empty')
 
-    def test_010_documentProduct_register_in_log_table(self):
+    def test_015_documentProduct_register_in_log_table(self):
         self.skipTest('empty')
 
-    def test_011_value_is_zero(self):
+    def test_016_value_is_zero(self):
         self.skipTest('empty')
 
-    def test_011_amount_is_zero(self):
+    def test_017_amount_is_zero(self):
+        self.skipTest('empty')
+
+    def test_019_create_with_deletedAt_not_none(self):
         self.skipTest('empty')
 
 
@@ -503,10 +593,16 @@ class TestCase_007_ModelPrice(TestCase_BaseModel):
     def test_011_update_fields_with_after_deleted(self):
         self.skipTest('empty')
 
-    def test_010_price_register_in_log_table(self):
+    def test_012_price_register_in_log_table(self):
         self.skipTest('empty')
     
-    def test_011_hierarchy_of_prices(self):
+    def test_013_hierarchy_of_prices(self):
+        self.skipTest('empty')
+
+    def test_014_create_with_deletedAt_not_none(self):
+        self.skipTest('empty')
+    
+    def test_015_create_price_with_product_deleted(self):
         self.skipTest('empty')
 
 
@@ -554,13 +650,31 @@ class TestCase_008_ModelStock(TestCase):
     def test_012_update_fields_with_after_deleted(self):
         self.skipTest('empty')
 
-    def test_010_product_register_in_log_table(self):
+    def test_013_product_register_in_log_table(self):
+        self.skipTest('empty')
+
+    def test_014_create_with_deletedAt_not_none(self):
         self.skipTest('empty')
 
 
 class TestCase_009_ModelStockMovement(TestCase):
     
     def test_001_dont_update_register(self):
+        self.skipTest('empty')
+
+    def test_003_create_with_deletedAt_not_none(self):
+        self.skipTest('empty')
+
+    def test_003_create_stockMovement_with_company_closed(self):
+        self.skipTest('empty')
+
+    def test_003_create_stockMovement_with_deposit_closed(self):
+        self.skipTest('empty')
+
+    def test_003_create_stockMovement_with_product_closed(self):
+        self.skipTest('empty')
+
+    def test_003_create_stockMovement_with_stock_closed(self):
         self.skipTest('empty')
 
 
