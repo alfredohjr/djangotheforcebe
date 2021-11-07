@@ -1,8 +1,9 @@
 from datetime import timezone
-from unittest.case import SkipTest
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone as djangoTimezone
+from shop.core.validators.cnpj import ValidateCNPJ
+from shop.core.validators.cpf import ValidateCPF
 
 # Create your tests here.
 
@@ -45,7 +46,7 @@ class AutoCreate:
         if name is None:
             name = self.name
         entity = Entity.objects.create(name=name
-                                        ,identifier=name + '_123456'
+                                        ,identifier='15.982.546/0001-62'
                                         ,identifierType='JU'
                                         ,entityType='FOR')
         return entity
@@ -94,7 +95,7 @@ class TestCase_BaseModel(TestCase):
         self.company = Company.objects.create(name='test_company')
         self.deposit = Deposit.objects.create(name='test_deposit',company=self.company)
         self.entity = Entity.objects.create(name='test_entity'
-                                        ,identifier='123456789'
+                                        ,identifier='494.678.920-06'
                                         ,identifierType='FI'
                                         ,entityType='FOR')
         self.product = Product.objects.create(name='test_product',margin=10)
@@ -339,25 +340,100 @@ class TestCase_002_ModelDeposit(TestCase):
         self.assertRaises(ValidationError,deposit.save)
 
     def test_012_update_fields_with_after_deleted(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000012')
+        deposit = auto.createDeposit()
+
+        deposit = Deposit.objects.get(id=deposit.id)
+        deposit.delete()
+
+        deposit = Deposit.objects.get(id=deposit.id)
+        deposit.name='test_000012_001'
+        self.assertRaises(ValidationError,deposit.save)
     
     def test_013_create_with_deletedAt_not_none(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000013')
+        company = auto.createCompany()
+
+        deposit = Deposit()
+        deposit.name = 'test_000013'
+        deposit.company = company
+        deposit.deletedAt = djangoTimezone.now()
+        deposit.save()
+
+        deposit = Deposit.objects.get(id=deposit.id)
+        self.assertIsNone(deposit.deletedAt)
+
+        Deposit.objects.create(
+             name='teste_000013_001'
+            ,company=company
+            ,deletedAt=djangoTimezone.now())
+
+        deposit = Deposit.objects.get(name='teste_000013_001')
+        self.assertIsNone(deposit.deletedAt)
+
+    def test_014_return_deleted_deposit(self):
+        auto = AutoCreate('test_000014')
+        deposit = auto.createDeposit()
+
+        deposit = Deposit.objects.get(id=deposit.id)
+        deposit.delete()
+
+        deposit = Deposit.objects.get(id=deposit.id)
+        deposit.deletedAt = None
+        deposit.save()
+
+        deposit = Deposit.objects.get(id=deposit.id)
+        self.assertIsNone(deposit.deletedAt)
+
+        auto = AutoCreate('test_000014_001')
+        deposit = auto.createDeposit()
+
+        deposit = Deposit.objects.get(id=deposit.id)
+        deposit.deletedAt = djangoTimezone.now()
+        deposit.save()
+
+        Deposit.objects.filter(id=deposit.id).update(deletedAt=None)
+
+        deposit = Deposit.objects.get(id=deposit.id)
+        self.assertIsNone(deposit.deletedAt)
 
 
 class TestCase_003_ModelEntity(TestCase):
 
     def test_001_create_entity(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000001')
+        entity = auto.createEntity()
+
+        entity = Entity.objects.get(id=entity.id)
+        self.assertEqual(entity.name,'test_000001')
 
     def test_002_update_entity(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000002')
+        entity = auto.createEntity()
+
+        entity = Entity.objects.get(id=entity.id)
+        entity.name = 'test_000002_001'
+        entity.save()
+
+        entity = Entity.objects.get(id=entity.id)
+        self.assertEqual(entity.name,'test_000002_001')
 
     def test_999_delete_entity(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000999')
+        entity = auto.createEntity()
+
+        entity = Entity.objects.get(id=entity.id)
+        entity.delete()
+
+        entity = Entity.objects.get(id=entity.id)
+        self.assertIsNotNone(entity.deletedAt)
 
     def test_003_delete_entity_with_document_open(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000003')
+        document = auto.createDocument()
+
+        entity = Entity.objects.get(id=document.entity.id)
+        self.assertRaises(ValidationError,entity.delete)
 
     def test_004_delete_entity_with_is_finance_open(self):
         self.skipTest('empty')
@@ -369,28 +445,78 @@ class TestCase_003_ModelEntity(TestCase):
         self.skipTest('empty')
 
     def test_007_entity_size_minimun_of_name_is_10(self):
+        entity = Entity()
+        entity.name = 'test_007'
+        self.assertRaises(ValidationError,entity.save)
+
+    def test_008_if_entity_is_JU_validate_CNPJ(self):
+        auto = AutoCreate('test_000008')
+        company = auto.createCompany()
+
+        entity = Entity()
+        entity.name = 'test_000008'
+        entity.company = company
+        entity.identifierType = 'JU'
+        self.assertRaises(ValidationError, entity.save)
+
+        entity = Entity()
+        entity.name = 'test_000008'
+        entity.company = company
+        entity.identifierType = 'JU'
+        entity.identifier = '1111'
+        self.assertRaises(ValidationError, entity.save)
+
+        entity = Entity()
+        entity.name = 'test_000008'
+        entity.company = company
+        entity.identifierType = 'JU'
+        entity.identifier = '72.964.696/0001-87'
+        self.assertTrue(entity.save)
+
+    def test_009_if_entity_is_FI_validate_CPF(self):
+        auto = AutoCreate('test_000009')
+        company = auto.createCompany()
+
+        entity = Entity()
+        entity.name = 'test_000009'
+        entity.company = company
+        entity.identifierType = 'FI'
+        self.assertRaises(ValidationError, entity.save)
+
+        entity = Entity()
+        entity.name = 'test_000009'
+        entity.company = company
+        entity.identifierType = 'FI'
+        entity.identifier = '1111'
+        self.assertRaises(ValidationError, entity.save)
+
+        entity = Entity()
+        entity.name = 'test_000009'
+        entity.company = company
+        entity.identifierType = 'FI'
+        entity.identifier = '703.165.570-64'
+        self.assertTrue(entity.save)
+
+    def test_010_update_fields_with_after_deleted(self):
         self.skipTest('empty')
 
-    def test_008_if_entity_is_CLI_document_is_OUT(self):
+    def test_011_create_with_deletedAt_not_none(self):
         self.skipTest('empty')
 
-    def test_009_if_entity_is_FOR_document_is_IN(self):
+    def test_012_return_deleted_entity(self):
         self.skipTest('empty')
 
-    def test_010_if_entity_is_JU_validate_CNPJ(self):
-        self.skipTest('empty')
+    def test_013_is_valid_entity_type_in_JU_or_FI(self):
+        auto = AutoCreate('test_000013')
+        company = auto.createCompany()
 
-    def test_011_if_entity_is_FI_validate_CPF(self):
-        self.skipTest('empty')
+        entity = Entity()
+        entity.name = 'test_000013'
+        entity.company=company
+        entity.identifierType = 'AA'
+        entity.identifier = '703.165.570-64'
 
-    def test_012_entity_size_minimun_of_name_is_10(self):
-        self.skipTest('empty')
-
-    def test_013_update_fields_with_after_deleted(self):
-        self.skipTest('empty')
-
-    def test_014_create_with_deletedAt_not_none(self):
-        self.skipTest('empty')
+        self.assertRaises(ValidationError,entity.save)
 
 
 class TestCase_004_ModelProduct(TestCase):
@@ -429,6 +555,9 @@ class TestCase_004_ModelProduct(TestCase):
         self.skipTest('empty')
 
     def test_011_create_with_deletedAt_not_none(self):
+        self.skipTest('empty')
+
+    def test_012_return_deleted_product(self):
         self.skipTest('empty')
 
 
@@ -485,10 +614,13 @@ class TestCase_005_ModelDocument(TestCase):
     def test_016_update_fields_with_after_deleted(self):
         self.skipTest('empty')
 
-    def test_010_document_register_in_log_table(self):
+    def test_017_document_register_in_log_table(self):
         self.skipTest('empty')
 
-    def test_011_create_with_deletedAt_not_none(self):
+    def test_018_create_with_deletedAt_not_none(self):
+        self.skipTest('empty')
+
+    def test_019_return_deleted_document(self):
         self.skipTest('empty')
 
 
@@ -551,6 +683,9 @@ class TestCase_006_ModelDocumentProduct(TestCase):
     def test_019_create_with_deletedAt_not_none(self):
         self.skipTest('empty')
 
+    def test_020_return_deleted_documentProduct(self):
+        self.skipTest('empty')
+
 
 class TestCase_007_ModelPrice(TestCase_BaseModel):
     
@@ -605,6 +740,9 @@ class TestCase_007_ModelPrice(TestCase_BaseModel):
     def test_015_create_price_with_product_deleted(self):
         self.skipTest('empty')
 
+    def test_016_return_deleted_price(self):
+        self.skipTest('empty')
+
 
 class TestCase_008_ModelStock(TestCase):
     
@@ -654,6 +792,9 @@ class TestCase_008_ModelStock(TestCase):
         self.skipTest('empty')
 
     def test_014_create_with_deletedAt_not_none(self):
+        self.skipTest('empty')
+
+    def test_015_return_deleted_stock(self):
         self.skipTest('empty')
 
 
@@ -706,3 +847,53 @@ class TestCase_014_ModelProductLog(TestCase):
 
     def test_001_dont_update_log_register(self):
         self.skipTest('empty')
+
+
+class TestCase_001_ValidatorsCPF(TestCase):
+
+    def test_001_check_with_valid_chars(self):
+        cpf = ValidateCPF('055.188.450-90')
+        self.assertTrue(cpf.run())
+    
+    def test_002_check_with_valid_numbers(self):
+        cpf = ValidateCPF(5518845090)
+        self.assertTrue(cpf.run())
+
+    def test_003_check_with_invalid_chars(self):
+        cpf = ValidateCPF('123.456.789-12')
+        self.assertFalse(cpf.run())
+    
+    def test_004_check_with_invalid_numbers(self):
+        cpf = ValidateCPF(12345678912)
+        self.assertFalse(cpf.run())
+
+    def test_005_check_with_cpf_is_repeat_sequence(self):
+        cpf = ValidateCPF(11111111111)
+        self.assertFalse(cpf.run())
+
+    def test_006_validate_len_of_string_is_11(self):
+        cpf = ValidateCPF(1111)
+        self.assertEqual(len(cpf.cpf),11)
+    
+
+class TestCase_001_ValidatorsCNPJ(TestCase):
+
+    def test_001_check_with_valid_chars(self):
+        cnpj = ValidateCNPJ('15.982.546/0001-62')
+        self.assertTrue(cnpj.run())
+    
+    def test_002_check_with_valid_numbers(self):
+        cnpj = ValidateCNPJ(15982546000162)
+        self.assertTrue(cnpj.run())
+
+    def test_003_check_with_invalid_chars(self):
+        cnpj = ValidateCNPJ('12.345.678/9123-45')
+        self.assertFalse(cnpj.run())
+    
+    def test_004_check_with_invalid_numbers(self):
+        cnpj = ValidateCNPJ(12345678912345)
+        self.assertFalse(cnpj.run())
+
+    def test_005_validate_len_of_string_is_13(self):
+        cnpj = ValidateCNPJ(1111)
+        self.assertEqual(len(cnpj.cnpj),13)
