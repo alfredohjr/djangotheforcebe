@@ -1,8 +1,11 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
+from django.utils import timezone
 
 from shop.models.DocumentProduct import DocumentProduct
+from shop.models.Deposit import Deposit
 
 class Document(models.Model):
 
@@ -33,13 +36,39 @@ class Document(models.Model):
     class Meta:
         unique_together = (('key','documentType'),)
 
+    def delete(self):
+
+        if self.isOpen:
+            self.deletedAt = timezone.now()
+            self.save()
+
 
 @receiver(pre_save, sender=Document)
 def save_document(sender, instance, **kwargs):
+    
+    deposit = Deposit.objects.filter(id=instance.deposit.id).exclude(deletedAt=None)
+    if deposit:
+        raise ValidationError('deposit is closed, verify.')
+
+    if instance.entity.deletedAt:
+        raise ValidationError('entity is closed, verify.')
+
+    if instance.isOpen == False:
+        documentProduct = DocumentProduct.objects.filter(document=instance.id,deletedAt=None)
+        if not documentProduct:
+            raise ValidationError('document don\'t close without product.')    
+    
+    if (instance.documentType == 'IN') and (instance.entity.entityType == 'CLI'):
+        raise ValidationError('Document is IN and entity is client, please, verify')
+    
+    if (instance.documentType == 'OUT') and (instance.entity.entityType == 'FOR'):
+        raise ValidationError('Document is OUT and entity is For, please, verify')
+
     queryset = Document.objects.filter(id=instance.id)
 
     if not queryset:
         return 0
+    
 
     if queryset[0].isOpen == instance.isOpen:
         pass

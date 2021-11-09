@@ -64,3 +64,14 @@ def pre_save_entity(sender, instance, *args, **kwargs):
             pass
         else:
             raise ValidationError('invalid CPF number, please verify.')
+
+    entity = Entity.objects.filter(id=instance.id)
+    if entity:
+        if instance.deletedAt is None and entity[0].deletedAt:
+            return True
+
+        if entity[0].deletedAt:
+            raise ValidationError('company is deleted, to alter this, reopen.')
+    else:
+        if instance.deletedAt != None:
+            raise ValidationError('don\'t create entity with deleted or closed, please verify.')

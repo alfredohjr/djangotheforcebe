@@ -23,8 +23,13 @@ class AutoCreate:
     def createCompany(self,name=None):
         if name is None:
             name = self.name
-        company = Company.objects.create(name=name)
-        return company
+        
+        company = Company.objects.filter(name=name)
+        if company:
+            return company[0]
+        else:
+            company = Company.objects.create(name=name)
+            return company
 
     def createAndDeleteCompany(self,name=None):
         if name is None:
@@ -39,17 +44,27 @@ class AutoCreate:
         if name is None:
             name = self.name
         company = self.createCompany(name)
-        deposit = Deposit.objects.create(name=name,company=company)
-        return deposit
+
+        deposit = Deposit.objects.filter(name=name)
+        if deposit:
+            return deposit[0]
+        else:
+            deposit = Deposit.objects.create(name=name,company=company)
+            return deposit
         
-    def createEntity(self,name=None):
+    def createEntity(self,name=None,entityType='FOR',identifierType='JU',identifier='15.982.546/0001-62'):
         if name is None:
             name = self.name
-        entity = Entity.objects.create(name=name
-                                        ,identifier='15.982.546/0001-62'
-                                        ,identifierType='JU'
-                                        ,entityType='FOR')
-        return entity
+
+        entity = Entity.objects.filter(name=name)
+        if entity:
+            return entity[0]
+        else:
+            entity = Entity.objects.create(name=name
+                ,identifier=identifier
+                ,identifierType=identifierType
+                ,entityType=entityType)
+            return entity
 
     def createProduct(self,name=None):
         if name is None:
@@ -97,7 +112,7 @@ class TestCase_BaseModel(TestCase):
         self.entity = Entity.objects.create(name='test_entity'
                                         ,identifier='494.678.920-06'
                                         ,identifierType='FI'
-                                        ,entityType='FOR')
+                                        ,entityType='CLI')
         self.product = Product.objects.create(name='test_product',margin=10)
 
         self.createDocument()
@@ -107,7 +122,7 @@ class TestCase_BaseModel(TestCase):
         self.document = Document.objects.create(key='test_document'
                                         ,deposit=self.deposit
                                         ,entity=self.entity
-                                        ,documentType='IN')
+                                        ,documentType='OUT')
         self.documentProduct = DocumentProduct.objects.create(document=self.document
                                                     ,product=self.product
                                                     ,amount=1
@@ -168,10 +183,14 @@ class TestCase_001_ModelCompany(TestCase_BaseModel):
 
     def test_999_delete_company(self):
 
+        entity = Entity.objects.create(name='test_entity'
+                                        ,identifier='15.987.787/0001-02'
+                                        ,identifierType='JU'
+                                        ,entityType='FOR')
         document = Document.objects.create(key='test_document_out'
                                             ,deposit=self.deposit
-                                            ,entity=self.entity
-                                            ,documentType='OUT')
+                                            ,entity=entity
+                                            ,documentType='IN')
         DocumentProduct.objects.create(document=document
                                         ,product=self.product
                                         ,amount=1
@@ -498,13 +517,36 @@ class TestCase_003_ModelEntity(TestCase):
         self.assertTrue(entity.save)
 
     def test_010_update_fields_with_after_deleted(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000010')
+        entity = auto.createEntity()
+
+        entity = Entity.objects.get(id=entity.id)
+        entity.delete()
+
+        entity = Entity.objects.get(id=entity.id)
+        entity.name = 'test_000010_001'
+        self.assertRaises(ValidationError,entity.save)
 
     def test_011_create_with_deletedAt_not_none(self):
-        self.skipTest('empty')
+        entity = Entity()
+        entity.name = 'test_000011'
+        entity.deletedAt = djangoTimezone.now()
+        self.assertRaises(ValidationError,entity.save)
 
     def test_012_return_deleted_entity(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000012')
+        entity = auto.createEntity()
+
+        entity = Entity.objects.get(id=entity.id)
+        entity.delete()
+
+        entity = Entity.objects.get(id=entity.id)
+        self.assertIsNotNone(entity.deletedAt)
+        entity.deletedAt = None
+        entity.save()
+
+        entity = Entity.objects.get(id=entity.id)
+        self.assertIsNone(entity.deletedAt)
 
     def test_013_is_valid_entity_type_in_JU_or_FI(self):
         auto = AutoCreate('test_000013')
@@ -564,40 +606,116 @@ class TestCase_004_ModelProduct(TestCase):
 class TestCase_005_ModelDocument(TestCase):
 
     def test_001_create_document(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000001')
+        document = auto.createDocument()
+
+        document = Document.objects.get(id=document.id)
+        self.assertEqual(document.key,'test_000001')
 
     def test_002_update_document(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000002')
+        document = auto.createDocument()
+
+        document = Document.objects.get(id=document.id)
+        document.key = 'test_000002_001'
+        document.save()
+
+        document = Document.objects.get(id=document.id)
+        self.assertEqual(document.key,'test_000002_001')
 
     def test_999_delete_document(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000999')
+        document = auto.createDocument()
+
+        document = Document.objects.get(id=document.id)
+        document.delete()
+
+        document = Document.objects.get(id=document.id)
+        self.assertIsNotNone(document.deletedAt)
 
     def test_003_delete_with_document_close(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000003')
+        document = auto.fullDocumentOperation()
+
+        document = Document.objects.get(id=document.id)
+        document.delete()
+
+        document = Document.objects.get(id=document.id)
+        self.assertIsNone(document.deletedAt)
 
     def test_004_documentLog_write_correct(self):
         self.skipTest('empty')
 
     def test_005_create_document_with_company_is_close(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000005')
+        company = auto.createCompany()
+
+        company = Company.objects.get(id=company.id)
+        company.delete()
+
+        self.assertRaises(ValidationError,auto.createDocument)
 
     def test_006_create_document_with_deposit_is_close(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000006')
+        deposit = auto.createDeposit()
+
+        deposit = Deposit.objects.get(id=deposit.id)
+        deposit.delete()
+
+        self.assertRaises(ValidationError,auto.createDocument)
 
     def test_007_create_document_with_entity_is_close(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000007')
+        entity = auto.createEntity()
+
+        entity = Entity.objects.get(id=entity.id)
+        entity.delete()
+
+        self.assertRaises(ValidationError,auto.createDocument)
 
     def test_008_close_document_without_product(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000008')
+        document = auto.createDocument()
+
+        document = Document.objects.get(id=document.id)
+        document.isOpen = False
+        self.assertRaises(ValidationError,document.save)
 
     def test_009_create_document_with_isOpen_false(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000009')
+        deposit = auto.createDeposit()
+        entity = auto.createEntity()
+
+        document = Document()
+        document.key = 'test_000009'
+        document.deposit = deposit
+        document.entity = entity
+        document.isOpen = False
+        self.assertRaises(ValidationError,document.save)
 
     def test_010_create_document_if_entity_is_CLI_documentType_is_IN(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000010')
+        deposit = auto.createDeposit()
+        entity = auto.createEntity(entityType='CLI',identifierType='FI',identifier='462.924.380-15')
+        
+        document = Document()
+        document.key = 'test_000010'
+        document.deposit = deposit
+        document.entity = entity
+        document.documentType = 'IN'
+        self.assertRaises(ValidationError,document.save)
 
     def test_011_create_document_if_entity_is_FOR_documentType_is_OUT(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000011')
+        deposit = auto.createDeposit()
+        entity = auto.createEntity()
+        
+        document = Document()
+        document.key = 'test_000011'
+        document.deposit = deposit
+        document.entity = entity
+        document.documentType = 'OUT'
+        self.assertRaises(ValidationError,document.save)
 
     def test_012_check_product_of_documents_isOpen_is_equals(self):
         self.skipTest('empty')
@@ -687,11 +805,8 @@ class TestCase_006_ModelDocumentProduct(TestCase):
         self.skipTest('empty')
 
 
-class TestCase_007_ModelPrice(TestCase_BaseModel):
+class TestCase_007_ModelPrice(TestCase):
     
-    def setUp(self):
-        return super().setUp()
-
     def test_001_create_price(self):
         self.skipTest('empty')
 
