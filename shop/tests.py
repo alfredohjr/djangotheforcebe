@@ -262,6 +262,10 @@ class TestCase_001_ModelCompany(TestCase_BaseModel):
         companyAux = auto.createAndDeleteCompany()
 
         company = Company.objects.get(id=companyAux.id)
+        company.name = 'test_000014_001'
+        self.assertRaises(ValidationError,company.save)
+
+        company = Company.objects.get(id=companyAux.id)
         company.deletedAt = None
         company.save()
 
@@ -564,19 +568,46 @@ class TestCase_003_ModelEntity(TestCase):
 class TestCase_004_ModelProduct(TestCase):
 
     def test_001_create_product(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000001')
+        product = auto.createProduct()
+
+        product = Product.objects.get(id=product.id)
+        self.assertEqual(product.name,'test_000001')
 
     def test_002_update_product(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000002')
+        product = auto.createProduct()
+
+        product = Product.objects.get(id=product.id)
+        product.name = 'test_000002_001'
+        product.save()
+
+        product = Product.objects.get(id=product.id)
+        self.assertEqual(product.name,'test_000002_001')
 
     def test_999_delete_product(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000999')
+        product = auto.createProduct()
+
+        product = Product.objects.get(id=product.id)
+        product.delete()
+
+        product = Product.objects.get(id=product.id)
+        self.assertIsNotNone(product.deletedAt)
 
     def test_003_delete_with_stock(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000003')
+        document = auto.fullDocumentOperation()
+
+        product = Product.objects.get(name='test_000003')
+        self.assertRaises(ValidationError,product.delete)
 
     def test_004_delete_with_document_open(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000004')
+        document = auto.createDocumentProduct()
+
+        product = Product.objects.get(name='test_000004')
+        self.assertRaises(ValidationError,product.delete)
 
     def test_005_delete_with_inventory_is_open(self):
         self.skipTest('empty')
@@ -585,23 +616,50 @@ class TestCase_004_ModelProduct(TestCase):
         self.skipTest('empty')
 
     def test_007_product_size_minimun_of_name_is_10(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_006')
+        self.assertRaises(ValidationError,auto.createProduct)
     
     def test_008_product_margin_negative(self):
-        self.skipTest('empty')
+        product = Product()
+        product.name = 'test_000008'
+        product.margin = -1
+        self.assertRaises(ValidationError,product.save)
 
-    def test_009_update_fields_with_after_deleted(self):
-        self.skipTest('empty')
+    def test_009_update_fields_after_deleted(self):
+        auto = AutoCreate('test_000009')
+        product = auto.createProduct()
+
+        product = Product.objects.get(id=product.id)
+        product.delete()
+
+        product = Product.objects.get(id=product.id)
+        product.name = 'test_000009_001'
+        self.assertRaises(ValidationError,product.save)
 
     def test_010_product_register_in_log_table(self):
         self.skipTest('empty')
 
     def test_011_create_with_deletedAt_not_none(self):
-        self.skipTest('empty')
+        product = Product()
+        product.name = 'test_000011'
+        product.deletedAt = djangoTimezone.now()
+        self.assertRaises(ValidationError,product.save)
 
     def test_012_return_deleted_product(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000012')
+        product = auto.createProduct()
 
+        product = Product.objects.get(id=product.id)
+        product.delete()
+
+        product = Product.objects.get(id=product.id)
+        self.assertIsNotNone(product.deletedAt)
+
+        product.deletedAt = None
+        product.save()
+
+        product = Product.objects.get(id=product.id)
+        self.assertIsNone(product.deletedAt)
 
 class TestCase_005_ModelDocument(TestCase):
 
@@ -718,52 +776,176 @@ class TestCase_005_ModelDocument(TestCase):
         self.assertRaises(ValidationError,document.save)
 
     def test_012_check_product_of_documents_isOpen_is_equals(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000012')
+        documentProduct = auto.createDocumentProduct()
+
+        self.assertTrue(documentProduct.isOpen)
+
+        document = Document.objects.get(id=documentProduct.document.id)
+        document.isOpen = False
+        document.save()
+
+        documentProduct = DocumentProduct.objects.get(id=documentProduct.id)
+        self.assertFalse(documentProduct.isOpen)
+
+        document = Document.objects.get(id=documentProduct.document.id)
+        document.isOpen = True
+        document.save()
+
+        documentProduct = DocumentProduct.objects.get(id=documentProduct.id)
+        self.assertTrue(documentProduct.isOpen)
 
     def test_013_close_document_stock_is_correct(self):
-        self.skipTest('empty')
+
+        for i in range(0,10):
+            auto = AutoCreate('test_' + str(i).zfill(8))
+            document = auto.fullDocumentOperation()
+
+            documentProduct = DocumentProduct.objects.filter(document__id=document.id)
+            
+            for docprod in documentProduct:
+                stock = Stock.objects.get(
+                            product__id=docprod.product.id
+                            , deposit__id=document.deposit.id)
+                self.assertEqual(stock.amount,1)
 
     def test_014_Reopen_document_stock_is_correct(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000014')
+        document = auto.fullDocumentOperation()
+
+        documentProduct = DocumentProduct.objects.filter(document__id=document.id)
+            
+        for docprod in documentProduct:
+            stock = Stock.objects.get(
+                        product__id=docprod.product.id
+                        ,deposit__id=document.deposit.id)
+            self.assertEqual(stock.amount,1)
+        
+        document = Document.objects.get(id=document.id)
+        document.isOpen = True
+        document.save()
+
+        for docprod in documentProduct:
+            stock = Stock.objects.get(
+                        product__id=docprod.product.id
+                        ,deposit__id=document.deposit.id)
+            self.assertEqual(stock.amount,0)
 
     def test_015_Reopen_document_reason_as_20_or_more_chars(self):
         self.skipTest('empty')
 
-    def test_016_update_fields_with_after_deleted(self):
-        self.skipTest('empty')
+    def test_016_update_fields_after_deleted(self):
+        auto = AutoCreate('test_000016')
+        document = auto.createDocument()
+
+        document = Document.objects.get(id=document.id)
+        document.delete()
+
+        document = Document.objects.get(id=document.id)
+        document.key = 'test_000016_001'
+        self.assertRaises(ValidationError,document.save)
 
     def test_017_document_register_in_log_table(self):
         self.skipTest('empty')
 
     def test_018_create_with_deletedAt_not_none(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000018')
+        deposit = auto.createDeposit()
+        entity = auto.createEntity()
+
+        document = Document()
+        document.key = 'test_000018'
+        document.deposit = deposit
+        document.entity = entity
+        document.deletedAt = djangoTimezone.now()
+        self.assertRaises(ValidationError,document.save)
 
     def test_019_return_deleted_document(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000019')
+        document = auto.createDocumentProduct()
 
+        document = Document.objects.get(id=document.id)
+        document.delete()
+
+        document = Document.objects.get(id=document.id)
+        self.assertIsNotNone(document.deletedAt)
+
+        document = Document.objects.get(id=document.id)
+        document.deletedAt = None
+        document.save()
+
+        document = Document.objects.get(id=document.id)
+        self.assertIsNone(document.deletedAt)
+    
+    def test_020_update_documentProducts_if_document_is_close(self):
+        auto = AutoCreate('test_000020')
+        document = auto.fullDocumentOperation()
+
+        documentProduct = DocumentProduct.objects.filter(document__id=document.id)
+        documentProduct = DocumentProduct.objects.get(id=documentProduct[0].id)
+        documentProduct.amount = 10
+        self.assertRaises(ValidationError,documentProduct.save)
+        
 
 class TestCase_006_ModelDocumentProduct(TestCase):
 
     def test_001_create_documentProduct(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000001')
+        documentProduct = auto.createDocumentProduct()
+
+        documentProduct = DocumentProduct.objects.get(id=documentProduct.id)
+        self.assertEqual(documentProduct.product.name,'test_000001')
 
     def test_002_update_documentProduct(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000002')
+        documentProduct = auto.createDocumentProduct()
+        
+        documentProduct = DocumentProduct.objects.get(id=documentProduct.id)
+        self.assertEqual(documentProduct.amount,1)
+        documentProduct.amount = 10
+        documentProduct.save()
+
+        documentProduct = DocumentProduct.objects.get(id=documentProduct.id)
+        self.assertEqual(documentProduct.amount,10)
 
     def test_999_delete_documentProduct(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000999')
+        documentProduct = auto.createDocumentProduct()
+
+        documentProduct = DocumentProduct.objects.get(id=documentProduct.id)
+        self.assertIsNone(documentProduct.deletedAt)
+
+        documentProduct = DocumentProduct.objects.get(id=documentProduct.id)
+        documentProduct.delete()
+
+        documentProduct = DocumentProduct.objects.get(id=documentProduct.id)
+        self.assertIsNotNone(documentProduct.deletedAt)
 
     def test_003_delete_with_document_close(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000003')
+        documentProduct = auto.fullDocumentOperation()
+
+        documentProduct = DocumentProduct.objects.get(id=documentProduct.id)
+        self.assertRaises(ValidationError,documentProduct.delete)
 
     def test_004_documentLog_write_correct(self):
         self.skipTest('empty')
 
     def test_005_value_is_negative(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000005')
+        documentProduct = auto.createDocumentProduct()
+
+        documentProduct = DocumentProduct.objects.get(id=documentProduct.id)
+        documentProduct.value = -1
+        self.assertRaises(ValidationError,documentProduct.save)
 
     def test_006_amount_is_negative(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000005')
+        documentProduct = auto.createDocumentProduct()
+
+        documentProduct = DocumentProduct.objects.get(id=documentProduct.id)
+        documentProduct.amount = -1
+        self.assertRaises(ValidationError,documentProduct.save)
 
     def test_007_create_documentProduct_with_isOpen_false(self):
         self.skipTest('empty')
@@ -793,10 +975,20 @@ class TestCase_006_ModelDocumentProduct(TestCase):
         self.skipTest('empty')
 
     def test_016_value_is_zero(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000005')
+        documentProduct = auto.createDocumentProduct()
+
+        documentProduct = DocumentProduct.objects.get(id=documentProduct.id)
+        documentProduct.value = 0
+        self.assertRaises(ValidationError,documentProduct.save)
 
     def test_017_amount_is_zero(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000005')
+        documentProduct = auto.createDocumentProduct()
+
+        documentProduct = DocumentProduct.objects.get(id=documentProduct.id)
+        documentProduct.amount = -1
+        self.assertRaises(ValidationError,documentProduct.save)
 
     def test_019_create_with_deletedAt_not_none(self):
         self.skipTest('empty')

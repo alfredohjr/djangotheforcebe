@@ -67,8 +67,15 @@ def save_document(sender, instance, **kwargs):
     queryset = Document.objects.filter(id=instance.id)
 
     if not queryset:
-        return 0
+        if instance.deletedAt:
+            raise ValidationError('don\'t create document deleted.')
+        else:
+            return True
     
+    if queryset[0].deletedAt:
+        if instance.deletedAt != None:
+            raise ValidationError('don\'t alter document closed.')
+        
 
     if queryset[0].isOpen == instance.isOpen:
         pass

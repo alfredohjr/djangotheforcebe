@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models.expressions import F
 from django.utils import timezone
@@ -14,7 +15,7 @@ import decimal
 class DocumentProduct(models.Model):
 
     document = models.ForeignKey('Document',on_delete=models.CASCADE)
-    product = models.ForeignKey('Product',on_delete=models.CASCADE)
+    product = models.ForeignKey('Product',on_delete=models.CASCADE,related_name='documentproducts')
     amount = models.DecimalField(max_digits=10,decimal_places=3)
     value = models.DecimalField(max_digits=10,decimal_places=3)
     isOpen = models.BooleanField(default=True)
@@ -22,6 +23,11 @@ class DocumentProduct(models.Model):
     createdAt = models.DateTimeField(auto_now_add=True)
     updatedAt = models.DateTimeField(auto_now=True)
     deletedAt = models.DateTimeField(null=True, blank=True)
+
+    def delete(self):
+
+        self.deletedAt = timezone.now()
+        self.save()
 
 
 
@@ -32,6 +38,15 @@ def pre_save_DocumentProduct(sender, instance, **kwargs):
     if not documentProduct:
         return 0
 
+    if instance.document.isOpen == False and instance.isOpen == False:
+        raise ValidationError('document is closed, verify.')
+
+    if instance.value <= 0:
+        raise ValidationError('negative value not allowed.')
+    
+    if instance.amount <= 0:
+        raise ValidationError('negative value not allowed.')
+    
     if documentProduct[0].isOpen != instance.isOpen:
 
         queryset_stock = Stock.objects.filter(deposit=instance.document.deposit,product=instance.product)
