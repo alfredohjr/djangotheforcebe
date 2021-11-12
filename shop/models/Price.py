@@ -1,5 +1,9 @@
+from datetime import time
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models.signals import pre_save
 from django.utils import timezone
+from django.dispatch import receiver
 
 from shop.models.Stock import Stock
 
@@ -36,3 +40,47 @@ class Price(models.Model):
         self.deletedAt = timezone.now()
         self.save()
         return True
+
+
+@receiver(pre_save, sender=Price)
+def pre_save_price(sender, instance, *args, **kwargs):
+
+    price = Price.objects.filter(id=instance.id)
+    if price:
+        if price[0].deletedAt and instance.deletedAt:
+            raise ValidationError('don\'t update deleted price.')
+    else:
+        if instance.deletedAt:
+            raise ValidationError('don\'t create deleted price.')
+
+    if instance.deposit.company.deletedAt:
+        raise ValidationError('company is closed, verify.')
+    
+    if instance.deposit.deletedAt:
+        raise ValidationError('deposit is closed, verify.')
+    
+    if instance.value <= 0:
+        raise ValidationError('don\'t use negative values.')
+
+    if instance.priceType == 'NO' and instance.finishedAt:
+        raise ValidationError('don\'t create normal price and finishedAt')
+    
+    if instance.priceType == 'OF' and instance.startedAt is None:
+        raise ValidationError('don\'t create oferta price without startedAt')
+
+    if instance.priceType == 'OF' and instance.finishedAt is None:
+        raise ValidationError('don\'t create oferta price without finishedAt')
+    
+    trunc = timezone.now()
+    trunc = timezone.datetime(trunc.year,trunc.month,trunc.day)
+    trunc = timezone.make_aware(trunc, timezone.get_current_timezone())
+
+    if instance.startedAt < trunc:
+        raise ValidationError('only create price started today.')
+    
+    if instance.finishedAt is not None and instance.priceType == 'OF':
+        if instance.finishedAt <= trunc: 
+            raise ValidationError('only create price started today.')
+
+    if instance.product.deletedAt:
+        raise ValidationError('product is deleted, verify.')

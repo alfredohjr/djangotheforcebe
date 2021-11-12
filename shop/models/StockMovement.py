@@ -9,7 +9,7 @@ class StockMovement(models.Model):
     ('OUT','Saida'),)
 
     deposit = models.ForeignKey('Deposit', on_delete=models.CASCADE)
-    product = models.ForeignKey('Product',on_delete=models.CASCADE)
+    product = models.ForeignKey('Product', on_delete=models.CASCADE)
     value = models.DecimalField(max_digits=10, decimal_places=3)
     amount = models.DecimalField(max_digits=10, decimal_places=3)
     movementType = models.CharField(max_length=3,choices=TYPE_CHOICES)

@@ -1,4 +1,5 @@
 from datetime import timezone
+import datetime
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone as djangoTimezone
@@ -12,8 +13,10 @@ from shop.models.Deposit import Deposit
 from shop.models.Document import Document
 from shop.models.DocumentProduct import DocumentProduct
 from shop.models.Entity import Entity
+from shop.models.Price import Price
 from shop.models.Product import Product
 from shop.models.Stock import Stock
+from shop.models.StockMovement import StockMovement
 
 class AutoCreate:
 
@@ -56,6 +59,10 @@ class AutoCreate:
         if name is None:
             name = self.name
 
+        if entityType == 'CLI':
+            identifierType = 'FI'
+            identifier = '446.846.440-22'
+
         entity = Entity.objects.filter(name=name)
         if entity:
             return entity[0]
@@ -69,39 +76,80 @@ class AutoCreate:
     def createProduct(self,name=None):
         if name is None:
             name = self.name
-        product = Product.objects.create(name=name)
-        return product
+        product = Product.objects.filter(name=name)
+        if product:
+            return product[0]
+        else:
+            product = Product.objects.create(name=name)
+            return product
 
     def createDocument(self,name=None,documentType='IN'):
         if name is None:
             name = self.name
         deposit = self.createDeposit(name)
-        entity = self.createEntity(name)
-        document = Document.objects.create(key=name
+        entityType = 'FOR' if documentType == 'IN' else 'CLI'
+        entity = self.createEntity(name, entityType=entityType)
+
+        document = Document.objects.filter(key=name)
+        if document:
+            return document[0]
+        else:    
+            document = Document.objects.create(key=name
                             ,deposit=deposit
                             ,entity=entity
                             ,documentType=documentType)
-        return document
+            return document
     
-    def createDocumentProduct(self,name=None):
+    def createDocumentProduct(self,name=None,documentType='IN'):
         if name is None:
             name = self.name
-        document = self.createDocument(name)
+
+        document = self.createDocument(name,documentType=documentType)
         product = self.createProduct(name)
+        
+        documentProduct = DocumentProduct.objects.filter(
+            document=document
+            ,product=product
+        )
+
+        if documentProduct:
+            return documentProduct[0]
+
         documentProduct = DocumentProduct.objects.create(document=document
                                                         ,product=product
                                                         ,amount=1
                                                         ,value=1)
         return documentProduct
     
-    def fullDocumentOperation(self,name=None):
+    def fullDocumentOperation(self,name=None,documentType='IN'):
         if name is None:
             name = self.name
-        documentProduct = self.createDocumentProduct(name)
+        document = self.createDocument(documentType=documentType)
+        documentProduct = self.createDocumentProduct(name,documentType=documentType)
         document = Document.objects.get(id=documentProduct.document.id)
         document.isOpen = False
         document.save()
         return document
+
+    def createPrice(self, name=None):
+        if name is None:
+            name = self.name
+
+        deposit = self.createDeposit()
+        product = self.createProduct()
+
+        price = Price.objects.filter(deposit=deposit, product=product)
+        if price:
+            return price[0]
+        else:
+            price = Price()
+            price.deposit = deposit
+            price.product = product
+            price.value = 10
+            price.priceType = 'NO'
+            price.startedAt = djangoTimezone.now()
+            price.save()
+            return price
 
 
 class TestCase_BaseModel(TestCase):
@@ -661,6 +709,7 @@ class TestCase_004_ModelProduct(TestCase):
         product = Product.objects.get(id=product.id)
         self.assertIsNone(product.deletedAt)
 
+
 class TestCase_005_ModelDocument(TestCase):
 
     def test_001_create_document(self):
@@ -947,34 +996,131 @@ class TestCase_006_ModelDocumentProduct(TestCase):
         documentProduct.amount = -1
         self.assertRaises(ValidationError,documentProduct.save)
 
-    def test_007_create_documentProduct_with_isOpen_false(self):
+    def test_007_create_documentProduct_with_delete_is_not_none(self):
+        auto = AutoCreate('test_000007')
+        product = auto.createProduct()
+        document = auto.createDocument()
+
+        documentProduct = DocumentProduct()
+        documentProduct.document = document
+        documentProduct.product = product
+        documentProduct.amount = 10
+        documentProduct.value = 10
+        documentProduct.deletedAt = djangoTimezone.now()
+        self.assertRaises(ValidationError,documentProduct.save)
+
+    def test_008_create_documentProduct_with_isOpen_false(self):
+        auto = AutoCreate('test_000008')
+        product = auto.createProduct()
+        document = auto.createDocument()
+
+        documentProduct = DocumentProduct()
+        documentProduct.document = document
+        documentProduct.product = product
+        documentProduct.amount = 10
+        documentProduct.value = 10
+        documentProduct.isOpen = False
+        self.assertRaises(ValidationError,documentProduct.save)
+
+    def test_009_create_documentProduct_with_document_isOpen_false(self):
+        auto = AutoCreate('test_000009')
+        product = auto.createProduct()
+        document = auto.createDocument()
+
+        documentProduct = DocumentProduct()
+        documentProduct.document = document
+        documentProduct.product = product
+        documentProduct.amount = 10
+        documentProduct.value = 10
+        documentProduct.save()
+
+        document = Document.objects.get(id=document.id)
+        document.isOpen = False
+        document.save()
+
+        product2 = Product.objects.create(name='test_000009_001')
+        documentProduct = DocumentProduct()
+        documentProduct.document = document
+        documentProduct.product = product2
+        documentProduct.amount = 10
+        documentProduct.value = 10
+
+        self.assertRaises(ValidationError,documentProduct.save)       
+
+    def test_010_close_documentProduct_IN_stock_is_correct(self):
+        auto = AutoCreate('test_000010')
+        document = auto.fullDocumentOperation()
+        product = auto.createProduct()
+        deposit = auto.createDeposit()
+
+        stock = Stock.objects.filter(product=product, deposit=deposit)
+        self.assertEqual(stock[0].amount,1)
+
+    def test_011_close_documentProduct_IN_stock_movement_is_correct(self):
+        auto = AutoCreate('test_000011')
+        document = auto.fullDocumentOperation()
+        product = auto.createProduct()
+        deposit = auto.createDeposit()
+
+        stockMovement = StockMovement.objects.filter(product=product, deposit=deposit)
+        self.assertEqual(document.documentType,'IN')
+        self.assertEqual(stockMovement[0].amount,1)
+        self.assertEqual(stockMovement[0].movementType,'IN')
+
+    def test_012_close_documentProduct_OUT_stock_is_correct(self):
+        auto = AutoCreate('test_000012')
+        document = auto.fullDocumentOperation(documentType='OUT')
+        product = auto.createProduct()
+        deposit = auto.createDeposit()
+
+        stock = Stock.objects.filter(product=product, deposit=deposit)
+        self.assertEqual(stock[0].amount,-1)
+
+    def test_013_close_documentProduct_OUT_stock_movement_is_correct(self):
+        auto = AutoCreate('test_000013')
+        document = auto.fullDocumentOperation(documentType='OUT')
+        product = auto.createProduct()
+        deposit = auto.createDeposit()
+
+        stockMovement = StockMovement.objects.filter(product=product, deposit=deposit)
+        self.assertEqual(len(stockMovement),1)
+        self.assertEqual(document.documentType,'OUT')
+        self.assertEqual(stockMovement[0].amount,1)
+        self.assertEqual(stockMovement[0].movementType,'OUT')
+
+    def test_014_close_documentProduct_price_is_suggested_correct(self):
+        auto = AutoCreate('test_000014')
+        document = auto.fullDocumentOperation()
+        documentProduct = auto.createDocumentProduct()
+        product = auto.createProduct()
+        deposit = auto.createDeposit()
+
+        price = Price.objects.filter(deposit=deposit,product=product)
+        self.assertIsNotNone(price)
+        self.assertEqual(price[0].deposit,deposit)
+        self.assertEqual(price[0].product,product)
+        self.assertEqual(price[0].value,documentProduct.value)
+        self.assertEqual(price[0].priceType,'NO')
+        self.assertIsNotNone(price[0].startedAt)
+        self.assertIsNone(price[0].finishedAt)
+        self.assertEqual(price[0].isValid,False)
+        self.assertIsNone(price[0].deletedAt)
+
+    def test_015_update_fields_with_after_deleted(self):
+        auto = AutoCreate('test_000015')
+        documentProduct = auto.createDocumentProduct()
+
+        documentProduct = DocumentProduct.objects.get(id=documentProduct.id)
+        documentProduct.delete()
+
+        documentProduct = DocumentProduct.objects.get(id=documentProduct.id)
+        documentProduct.amount = 10
+        self.assertRaises(ValidationError,documentProduct.save)
+
+    def test_016_documentProduct_register_in_log_table(self):
         self.skipTest('empty')
 
-    def test_008_create_documentProduct_with_document_isOpen_false(self):
-        self.skipTest('empty')
-
-    def test_009_close_documentProduct_IN_stock_is_correct(self):
-        self.skipTest('empty')
-
-    def test_010_close_documentProduct_IN_stock_movement_is_correct(self):
-        self.skipTest('empty')
-
-    def test_011_close_documentProduct_OUT_stock_is_correct(self):
-        self.skipTest('empty')
-
-    def test_012_close_documentProduct_OUT_stock_movement_is_correct(self):
-        self.skipTest('empty')
-
-    def test_013_close_documentProduct_price_is_suggested_correct(self):
-        self.skipTest('empty')
-
-    def test_014_update_fields_with_after_deleted(self):
-        self.skipTest('empty')
-
-    def test_015_documentProduct_register_in_log_table(self):
-        self.skipTest('empty')
-
-    def test_016_value_is_zero(self):
+    def test_017_value_is_zero(self):
         auto = AutoCreate('test_000005')
         documentProduct = auto.createDocumentProduct()
 
@@ -982,7 +1128,7 @@ class TestCase_006_ModelDocumentProduct(TestCase):
         documentProduct.value = 0
         self.assertRaises(ValidationError,documentProduct.save)
 
-    def test_017_amount_is_zero(self):
+    def test_018_amount_is_zero(self):
         auto = AutoCreate('test_000005')
         documentProduct = auto.createDocumentProduct()
 
@@ -990,50 +1136,158 @@ class TestCase_006_ModelDocumentProduct(TestCase):
         documentProduct.amount = -1
         self.assertRaises(ValidationError,documentProduct.save)
 
-    def test_019_create_with_deletedAt_not_none(self):
-        self.skipTest('empty')
+    def test_019_return_deleted_documentProduct(self):
+        auto = AutoCreate('test_000018')
+        documentProduct = auto.createDocumentProduct()
 
-    def test_020_return_deleted_documentProduct(self):
-        self.skipTest('empty')
+        documentProduct = DocumentProduct.objects.get(id=documentProduct.id)
+        documentProduct.delete()
+        
+        documentProduct = DocumentProduct.objects.get(id=documentProduct.id)
+        self.assertIsNotNone(documentProduct.deletedAt)
 
+        documentProduct = DocumentProduct.objects.get(id=documentProduct.id)
+        documentProduct.deletedAt = None
+        documentProduct.save()
+
+        documentProduct = DocumentProduct.objects.get(id=documentProduct.id)
+        self.assertIsNone(documentProduct.deletedAt)
 
 class TestCase_007_ModelPrice(TestCase):
     
     def test_001_create_price(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000001')
+        price = auto.createPrice()
+
+        price = Price.objects.get(id=price.id)
+        self.assertIsNotNone(price)
 
     def test_002_update_price(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000002')
+        price = auto.createPrice()
+
+        price = Price.objects.get(id=price.id)
+        price.value = 100
+        price.save()
+
+        price = Price.objects.get(id=price.id)
+        self.assertEqual(price.value,100)
 
     def test_999_delete_price(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000999')
+        price = auto.createPrice()
+
+        price = Price.objects.get(id=price.id)
+        price.delete()
+
+        price = Price.objects.get(id=price.id)
+        self.assertIsNotNone(price.deletedAt)
 
     def test_003_create_price_with_closed_company(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000003')
+        company = auto.createCompany()
+        deposit = auto.createDeposit()
+        product = auto.createProduct()
+
+        company = Company.objects.get(id=company.id)
+        company.delete()
+
+        self.assertRaises(ValidationError, auto.createPrice)
 
     def test_004_create_price_with_closed_deposit(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000004')
+        deposit = auto.createDeposit()
+        product = auto.createProduct()
+
+        deposit = Deposit.objects.get(id=deposit.id)
+        deposit.delete()
+
+        self.assertRaises(ValidationError, auto.createPrice)
 
     def test_005_create_price_with_negative_values(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000005')
+        deposit = auto.createDeposit()
+        product = auto.createProduct()
+
+        price = Price()
+        price.deposit = deposit
+        price.product = product
+        price.value = -1
+        self.assertRaises(ValidationError,price.save)
 
     def test_006_if_priceType_is_NO_finishedAt_is_none(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000006')
+        deposit = auto.createDeposit()
+        product = auto.createProduct()
+
+        price = Price()
+        price.deposit = deposit
+        price.product = product
+        price.value = 1
+        price.priceType = 'NO'
+        price.finishedAt = djangoTimezone.now()
+        self.assertRaises(ValidationError,price.save)
 
     def test_007_if_priceType_is_OF_startedAt_and_finishedAt_is_not_none(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000007')
+        deposit = auto.createDeposit()
+        product = auto.createProduct()
 
-    def test_008_define_price_before_stock_gt_zero(self):
-        self.skipTest('empty')
+        price = Price()
+        price.deposit = deposit
+        price.product = product
+        price.value = 1
+        price.priceType = 'OF'
+        price.startedAt = None
+        self.assertRaises(ValidationError,price.save)
 
-    def test_009_create_with_startedAt_yesterday(self):
-        self.skipTest('empty')
+        price = Price()
+        price.deposit = deposit
+        price.product = product
+        price.value = 1
+        price.priceType = 'OF'
+        price.startedAt = djangoTimezone.now()
+        price.finishedAt = None
+        self.assertRaises(ValidationError,price.save)        
+
+    def test_009_create_if_startedAt_yesterday(self):
+        auto = AutoCreate('test_000009')
+        deposit = auto.createDeposit()
+        product = auto.createProduct()
+
+        price = Price()
+        price.deposit = deposit
+        price.product = product
+        price.value = 1
+        price.priceType = 'OF'
+        price.startedAt = djangoTimezone.now() - datetime.timedelta(days=1)
+        price.finishedAt = djangoTimezone.now()
+        self.assertRaises(ValidationError,price.save)
     
-    def test_010_create_with_finishedAt_yesterday(self):
-        self.skipTest('empty')
+    def test_010_create_if_finishedAt_yesterday(self):
+        auto = AutoCreate('test_000010')
+        deposit = auto.createDeposit()
+        product = auto.createProduct()
+
+        price = Price()
+        price.deposit = deposit
+        price.product = product
+        price.value = 1
+        price.priceType = 'OF'
+        price.startedAt = djangoTimezone.now()
+        price.finishedAt = djangoTimezone.now() - datetime.timedelta(days=1)
+        self.assertRaises(ValidationError,price.save)
 
     def test_011_update_fields_with_after_deleted(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000011')
+        price = auto.createPrice()
+
+        price = Price.objects.get(id=price.id)
+        price.delete()
+
+        price = Price.objects.get(id=price.id)
+        price.value = 100
+        self.assertRaises(ValidationError, price.save)
 
     def test_012_price_register_in_log_table(self):
         self.skipTest('empty')
@@ -1042,13 +1296,45 @@ class TestCase_007_ModelPrice(TestCase):
         self.skipTest('empty')
 
     def test_014_create_with_deletedAt_not_none(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000014')
+        deposit = auto.createDeposit()
+        product = auto.createProduct()
+
+        price = Price()
+        price.deposit = deposit
+        price.product = product
+        price.priceType = 'NO'
+        price.value = 100
+        price.startedAt = djangoTimezone.now()
+        price.deletedAt = djangoTimezone.now()
+        self.assertRaises(ValidationError, price.save)
     
     def test_015_create_price_with_product_deleted(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000015')
+        deposit = auto.createDeposit()
+        product = auto.createProduct()
+
+        product = Product.objects.get(id=product.id)
+        product.delete()
+
+        self.assertRaises(ValidationError, auto.createPrice)
 
     def test_016_return_deleted_price(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000016')
+        price = auto.createPrice()
+
+        price = Price.objects.get(id=price.id)
+        price.delete()
+
+        price = Price.objects.get(id=price.id)
+        self.assertIsNotNone(price.deletedAt)
+
+        price = Price.objects.get(id=price.id)
+        price.deletedAt = None
+        price.save()
+
+        price = Price.objects.get(id=price.id)
+        self.assertIsNone(price.deletedAt)
 
 
 class TestCase_008_ModelStock(TestCase):

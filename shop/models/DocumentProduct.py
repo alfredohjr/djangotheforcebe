@@ -36,6 +36,12 @@ def pre_save_DocumentProduct(sender, instance, **kwargs):
 
     documentProduct = DocumentProduct.objects.filter(id=instance.id)
     if not documentProduct:
+        if instance.deletedAt is not None:
+            raise ValidationError('don\'t create document product with delete.')
+        if not instance.isOpen:
+            raise ValidationError('don\'t create document product closed flag.')
+        if not instance.document.isOpen:
+            raise ValidationError('don\'t add products in document closed')
         return 0
 
     if instance.document.isOpen == False and instance.isOpen == False:
@@ -46,6 +52,9 @@ def pre_save_DocumentProduct(sender, instance, **kwargs):
     
     if instance.amount <= 0:
         raise ValidationError('negative value not allowed.')
+
+    if documentProduct[0].deletedAt and instance.deletedAt:
+        raise ValidationError('don\'t alter document product deleted')
     
     if documentProduct[0].isOpen != instance.isOpen:
 
@@ -64,17 +73,17 @@ def pre_save_DocumentProduct(sender, instance, **kwargs):
 
         if instance.isOpen:
             if instance.document.documentType == 'IN':
-                stockMovement.movementType = 'IN'
+                stockMovement.movementType = 'OUT'
                 stock.amount= F('amount') - instance.amount
             elif instance.document.documentType == 'OUT':
-                stockMovement.movementType = 'OUT'
+                stockMovement.movementType = 'IN'
                 stock.amount= F('amount') + instance.amount
         else:
             if instance.document.documentType == 'IN':
-                stockMovement.movementType = 'OUT'
+                stockMovement.movementType = 'IN'
                 stock.amount= F('amount') + instance.amount
             elif instance.document.documentType == 'OUT':
-                stockMovement.movementType = 'IN'
+                stockMovement.movementType = 'OUT'
                 stock.amount= F('amount') - instance.amount
 
         stock.value = instance.value
