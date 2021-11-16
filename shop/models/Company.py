@@ -28,7 +28,7 @@ class Company(models.Model):
         stocks = Stock.objects.filter(deposit__in=deposits)
         for stock in stocks:
             if stock.amount != decimal.Decimal(0):
-                raise ValidationError('don\'t delete company if product stock is not 0.')
+                raise ValidationError(('don\'t delete company if product stock is not 0.'))
         
         document = Document.objects.filter(deposit__in=deposits,isOpen=True)
         if document:
@@ -51,7 +51,7 @@ def pre_save_company(sender, instance, *args, **kwargs):
     log = CompanyLog()
 
     if len(instance.name.strip()) < 10:
-        raise ValidationError('minumum size is 10')
+        raise ValidationError(('minumum size is 10'))
 
     if instance.deletedAt:
         deposits = Deposit.objects.filter(company_id=instance.id)
@@ -90,4 +90,3 @@ def post_save_company(sender, instance, created, *args, **kwargs):
             company = Company.objects.get(id=instance.id)
             company.deletedAt = None
             company.save()
-            return True

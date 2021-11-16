@@ -1,12 +1,13 @@
+from django.core.checks import messages
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
+from django.db import connection
 
 from shop.models.Stock import Stock
-
-from django.db import connection
+from shop.models.ProductLog import ProductLog
 
 def my_custom_sql(sql):
     with connection.cursor() as cursor:
@@ -40,7 +41,8 @@ class Product(models.Model):
 
         self.deletedAt = timezone.now()
         self.save()
-        return True
+        log = ProductLog()
+        log.register(id=self.id, table='product', transaction='del', message='deleted')
 
 @receiver(pre_save,sender=Product)
 def save_product(sender, instance, **kwargs):
@@ -54,6 +56,8 @@ def save_product(sender, instance, **kwargs):
     product = Product.objects.filter(id=instance.id)
     if product:
         if instance.deletedAt is None and product[0].deletedAt:
+            log = ProductLog()
+            log.register(id=instance.id, table='product', transaction='upd', message='return product')
             return True
 
         if product[0].deletedAt:
@@ -62,4 +66,23 @@ def save_product(sender, instance, **kwargs):
     else:
         if instance.deletedAt != None:
             raise ValidationError('don\'t create product inactive, please verify.')
+
+    # for logs...
+    if product:
+        messages = []
+        if product[0].name != instance.name:
+            messages.append(f'name_from={product[0].name}, name_to={instance.name}')
+
+        if product[0].margin != instance.margin:
+            messages.append(f'margin_from={product[0].margin}, margin_to={instance.margin}')
+
+        if messages:
+            log = ProductLog()
+            log.register(id=instance.id, table='product', transaction='upd', message='|'.join(messages))
             
+
+@receiver(post_save, sender=Product)
+def post_save_product(sender, instance, created, *args, **kwargs):
+    if created:
+        log = ProductLog()
+        log.register(id=instance.id, table='product', transaction='cre', message='created')

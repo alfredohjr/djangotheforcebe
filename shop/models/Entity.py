@@ -1,12 +1,14 @@
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models.signals import pre_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.utils import timezone
+
+from shop.models.Document import Document
+from shop.models.EntityLog import EntityLog
 from shop.core.validators.cnpj import ValidateCNPJ
 from shop.core.validators.cpf import ValidateCPF
 
-from shop.models.Document import Document
 
 class Entity(models.Model):
 
@@ -43,6 +45,8 @@ class Entity(models.Model):
 
         self.deletedAt = timezone.now()
         self.save()
+        log = EntityLog()
+        log.register(id=self.id, table='entity', transaction='del', message='delete')
 
 
 @receiver(pre_save,sender=Entity)
@@ -68,6 +72,8 @@ def pre_save_entity(sender, instance, *args, **kwargs):
     entity = Entity.objects.filter(id=instance.id)
     if entity:
         if instance.deletedAt is None and entity[0].deletedAt:
+            log = EntityLog()
+            log.register(id=instance.id, table='entity', transaction='upd', message='return deleted entity')
             return True
 
         if entity[0].deletedAt:
@@ -75,3 +81,32 @@ def pre_save_entity(sender, instance, *args, **kwargs):
     else:
         if instance.deletedAt != None:
             raise ValidationError('don\'t create entity with deleted or closed, please verify.')
+    
+    # for logs...
+    if entity:
+        messages = []
+        if entity[0].name != instance.name:
+            messages.append(f'name_from={entity[0].name}, name_to={instance.name}')
+
+        if entity[0].identifier != instance.identifier:
+            messages.append(f'identifier_from={entity[0].identifier}, identifier_to={instance.identifier}')
+
+        if entity[0].identifierType != instance.identifierType:
+            messages.append(f'identifierType_from={entity[0].identifierType}, identifierType_to={instance.identifierType}')
+
+        if entity[0].entityType != instance.entityType:
+            messages.append(f'entityType_from={entity[0].entityType}, entityType_to={instance.entityType}')
+
+        if entity[0].isActive != instance.isActive:
+            messages.append(f'isActive_from={entity[0].isActive}, isActive_to={instance.isActive}')
+
+        if messages:
+            log = EntityLog()
+            log.register(id=instance.id, table='entity', transaction='upd', message='|'.join(messages))
+
+
+@receiver(post_save, sender=Entity)
+def post_save_entity(sender, instance, created, *args, **kwargs):
+    if created:
+        log = EntityLog()
+        log.register(id=instance.id, table='entity', transaction='cre', message='created')
