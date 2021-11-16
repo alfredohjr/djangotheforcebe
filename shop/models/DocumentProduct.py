@@ -9,6 +9,7 @@ from shop.models.Price import Price
 from shop.models.Product import Product
 from shop.models.Stock import Stock
 from shop.models.StockMovement import StockMovement
+from shop.models.DocumentLog import DocumentLog
 
 import decimal
 
@@ -115,3 +116,41 @@ def pre_save_DocumentProduct(sender, instance, **kwargs):
                             , startedAt = tomorrow
                             , priceType='NO')
                 price.save()
+
+    # for logs
+    if documentProduct:
+        message = []
+
+        if documentProduct[0].document != instance.document:
+            message.append(f'document_from={documentProduct[0].document}, document_to={instance.document}')
+
+        if documentProduct[0].product != instance.product:
+            message.append(f'product_from={documentProduct[0].product}, product_to={instance.product}')
+
+        if documentProduct[0].amount != instance.amount:
+            message.append(f'amount_from={documentProduct[0].product}, amount_to={instance.product}')
+
+        if documentProduct[0].value != instance.value:
+            message.append(f'value_from={documentProduct[0].value}, value_to={instance.value}')
+
+        if documentProduct[0].isOpen != instance.isOpen:
+            message.append(f'isOpen_from={documentProduct[0].isOpen}, isOpen_to={instance.isOpen}')
+        
+        if documentProduct[0].isNew != instance.isNew:
+            message.append(f'isNew_from={documentProduct[0].isNew}, isNew_to={instance.isNew}')
+
+
+        if message:
+            message.append(f'documentProduct_id={instance.id}')
+            log = DocumentLog()
+            log.register(
+                id=instance.document.id
+                ,table='documentproduct'
+                ,transaction='UPD'
+                ,message='|'.join(message))
+
+@receiver(post_save, sender=DocumentProduct)
+def post_save_DocumentProduct(sender, instance, created, *args, **kwargs):
+    if created:
+        log = DocumentLog()
+        log.register(id=instance.document.id, table='documentproduct', transaction='cre', message=f'created, documentProduct_id={instance.id}')

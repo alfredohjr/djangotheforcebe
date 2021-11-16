@@ -1,12 +1,10 @@
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models.signals import pre_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.utils import timezone
 
 from shop.models.DocumentProduct import DocumentProduct
-from shop.models.Deposit import Deposit
-
 from shop.models.DocumentLog import DocumentLog
 
 class Document(models.Model):
@@ -112,3 +110,9 @@ def save_document(sender, instance, **kwargs):
         if message:
             log = DocumentLog()
             log.register(id=instance.id, table='document', transaction='UPD', message='|'.join(message))
+
+@receiver(post_save, sender=Document)
+def post_save_document(sender, instance, created, *args, **kwargs):
+    if created:
+        log = DocumentLog()
+        log.register(id=instance.id, table='document', transaction='CRE', message='created')
