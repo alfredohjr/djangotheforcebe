@@ -86,7 +86,9 @@ def pre_save_DocumentProduct(sender, instance, **kwargs):
                 stockMovement.movementType = 'OUT'
                 stock.amount= F('amount') - instance.amount
 
-        stock.value = instance.value
+        if instance.document.documentType == 'IN':
+            stock.value = instance.value
+        
         stock.save()
         stockMovement.save()
 

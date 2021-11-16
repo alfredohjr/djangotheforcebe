@@ -223,11 +223,14 @@ class TestCase_001_ModelCompany(TestCase_BaseModel):
 
     def test_003_delete_company_with_product_stock(self):
         auto = AutoCreate('test_000003')
-        document = auto.createDocument()
+        document = auto.fullDocumentOperation()
 
         company = Company.objects.get(name='test_000003')
-        company.delete()
-        self.assertIsNone(company.deletedAt)
+        self.assertRaises(ValidationError,company.delete)
+
+        company = Company.objects.get(name='test_000003')
+        company.deletedAt = djangoTimezone.now()
+        self.assertRaises(ValidationError,company.save)
 
     def test_999_delete_company(self):
 
@@ -331,6 +334,26 @@ class TestCase_001_ModelCompany(TestCase_BaseModel):
         company = Company.objects.get(name='test_000015_001')
         self.assertIsNone(company.deletedAt)
 
+    def test_016_function_close(self):
+        auto = AutoCreate('test_000016')
+        company = auto.createCompany()
+
+        company.close()
+        company = Company.objects.get(id=company.id)
+        self.assertIsNotNone(company.deletedAt)
+    
+    def test_017_function_open(self):
+        auto = AutoCreate('test_000017')
+        company = auto.createCompany()
+        company.close()
+
+        company = Company.objects.get(id=company.id)
+        self.assertIsNotNone(company.deletedAt)
+        
+        company.open()
+        company = Company.objects.get(id=company.id)
+        self.assertIsNone(company.deletedAt)
+
 
 class TestCase_002_ModelDeposit(TestCase):
 
@@ -357,10 +380,11 @@ class TestCase_002_ModelDeposit(TestCase):
         auto.fullDocumentOperation()
 
         deposit = Deposit.objects.get(name='test_000003')
-        deposit.delete()
+        self.assertRaises(ValidationError,deposit.delete)
 
         deposit = Deposit.objects.get(name='test_000003')
-        self.assertIsNone(deposit.deletedAt)
+        deposit.deletedAt = djangoTimezone.now()
+        self.assertRaises(ValidationError,deposit.save)
 
     def test_999_delete_deposit(self):
         auto = AutoCreate('test_000999')
@@ -429,18 +453,7 @@ class TestCase_002_ModelDeposit(TestCase):
         deposit.name = 'test_000013'
         deposit.company = company
         deposit.deletedAt = djangoTimezone.now()
-        deposit.save()
-
-        deposit = Deposit.objects.get(id=deposit.id)
-        self.assertIsNone(deposit.deletedAt)
-
-        Deposit.objects.create(
-             name='teste_000013_001'
-            ,company=company
-            ,deletedAt=djangoTimezone.now())
-
-        deposit = Deposit.objects.get(name='teste_000013_001')
-        self.assertIsNone(deposit.deletedAt)
+        self.assertRaises(ValidationError, deposit.save)
 
     def test_014_return_deleted_deposit(self):
         auto = AutoCreate('test_000014')
@@ -467,6 +480,12 @@ class TestCase_002_ModelDeposit(TestCase):
 
         deposit = Deposit.objects.get(id=deposit.id)
         self.assertIsNone(deposit.deletedAt)
+
+    def test_016_function_close(self):
+        self.skipTest('empty')
+    
+    def test_017_function_open(self):
+        self.skipTest('empty')
 
 
 class TestCase_003_ModelEntity(TestCase):
@@ -612,6 +631,12 @@ class TestCase_003_ModelEntity(TestCase):
 
         self.assertRaises(ValidationError,entity.save)
 
+    def test_016_function_close(self):
+        self.skipTest('empty')
+    
+    def test_017_function_open(self):
+        self.skipTest('empty')
+
 
 class TestCase_004_ModelProduct(TestCase):
 
@@ -708,6 +733,12 @@ class TestCase_004_ModelProduct(TestCase):
 
         product = Product.objects.get(id=product.id)
         self.assertIsNone(product.deletedAt)
+
+    def test_016_function_close(self):
+        self.skipTest('empty')
+    
+    def test_017_function_open(self):
+        self.skipTest('empty')
 
 
 class TestCase_005_ModelDocument(TestCase):
@@ -935,6 +966,12 @@ class TestCase_005_ModelDocument(TestCase):
         documentProduct.amount = 10
         self.assertRaises(ValidationError,documentProduct.save)
         
+    def test_016_function_close(self):
+        self.skipTest('empty')
+    
+    def test_017_function_open(self):
+        self.skipTest('empty')
+
 
 class TestCase_006_ModelDocumentProduct(TestCase):
 
@@ -1153,6 +1190,13 @@ class TestCase_006_ModelDocumentProduct(TestCase):
         documentProduct = DocumentProduct.objects.get(id=documentProduct.id)
         self.assertIsNone(documentProduct.deletedAt)
 
+    def test_016_function_close(self):
+        self.skipTest('empty')
+    
+    def test_017_function_open(self):
+        self.skipTest('empty')
+
+
 class TestCase_007_ModelPrice(TestCase):
     
     def test_001_create_price(self):
@@ -1336,26 +1380,58 @@ class TestCase_007_ModelPrice(TestCase):
         price = Price.objects.get(id=price.id)
         self.assertIsNone(price.deletedAt)
 
+    def test_016_function_close(self):
+        self.skipTest('empty')
+    
+    def test_017_function_open(self):
+        self.skipTest('empty')
+
 
 class TestCase_008_ModelStock(TestCase):
-    
-    def setUp(self):
-        return super().setUp()
 
     def test_001_create_stock_only_document(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000001')
+        deposit = auto.createDeposit()
+        product = auto.createProduct()
+
+        stock = Stock()
+        stock.deposit = deposit
+        stock.product = product
+        stock.amount = 1
+        stock.value = 1
+        self.assertRaises(ValidationError,stock.save)
 
     def test_002_update_stock_only_document(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000002')
+        deposit = auto.createDeposit()
+        product = auto.createProduct()
+        auto.fullDocumentOperation()
+
+        stock = Stock.objects.get(product=product, deposit=deposit)
+        stock.amount = 10
+        self.assertRaises(ValidationError,stock.save)
 
     def test_999_delete_stock_with_amount_gt_zero(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000999')
+        document = auto.fullDocumentOperation()
+        product = auto.createProduct()
+        deposit = auto.createDeposit()
+
+        stock = Stock.objects.get(product=product, deposit=deposit)
+        self.assertRaises(ValidationError,stock.delete)
+
+        stock = Stock.objects.get(product=product, deposit=deposit)
+        stock.deletedAt = djangoTimezone.now()
+        self.assertRaises(ValidationError,stock.save)
 
     def test_003_update_value_only_document_IN(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000003')
+        deposit = auto.createDeposit()
+        product = auto.createProduct()
+        auto.fullDocumentOperation(documentType='OUT')
 
-    def test_004_update_amount_only_document(self):
-        self.skipTest('empty')
+        stock = Stock.objects.get(deposit=deposit, product=product)
+        self.assertEqual(stock.value,0)
 
     def test_005_inventory_IN(self):
         self.skipTest('empty')
@@ -1364,51 +1440,180 @@ class TestCase_008_ModelStock(TestCase):
         self.skipTest('empty')
 
     def test_007_create_stock_with_company_close(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000007')
+        document = auto.createDocumentProduct()
+
+        document = Document.objects.get(id=document.id)
+        document.isOpen = False
+        document.save()
+
+        company = auto.createCompany()
+
+        company = Company.objects.get(id=company.id)
+        self.assertRaises(ValidationError,company.delete)
 
     def test_008_create_stock_with_deposit_close(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000008')
+        deposit = auto.createDeposit()
+
+        deposit = Deposit.objects.get(id=deposit.id)
+        deposit.deletedAt = djangoTimezone.now()
+        deposit.save()
+
+        self.assertRaises(ValidationError,auto.fullDocumentOperation)
 
     def test_009_create_stock_with_product_close(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000009')
+        product = auto.createProduct()
+
+        product = Product.objects.get(id=product.id)
+        product.deletedAt = djangoTimezone.now()
+        product.save()
+
+        self.assertRaises(ValidationError, auto.fullDocumentOperation)
 
     def test_010_create_with_value_negative(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000010')
+        deposit = auto.createDeposit()
+        product = auto.createProduct()
+
+        stock = Stock()
+        stock.deposit = deposit
+        stock.product = product
+        stock.amount = 0
+        stock.value = -1
+        self.assertRaises(ValidationError, stock.save)
 
     def test_011_update_with_value_negative(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000011')
+        deposit = auto.createDeposit()
+        product = auto.createProduct()
+        document = auto.fullDocumentOperation()
+
+        stock = Stock.objects.get(deposit__id=deposit.id, product__id=product.id)
+        stock.value = -1
+        self.assertRaises(ValidationError, stock.save)
 
     def test_012_update_fields_with_after_deleted(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000012')
+        deposit = auto.createDeposit()
+        product = auto.createProduct()
+        entity = auto.createEntity(name='test_000012_001',entityType='CLI')
+        document = auto.fullDocumentOperation()
+
+        document = Document()
+        document.deposit = deposit
+        document.entity = entity
+        document.documentType = 'OUT'
+        document.save()
+
+        documentProduct = DocumentProduct()
+        documentProduct.document = document
+        documentProduct.product = product
+        documentProduct.value = 1
+        documentProduct.amount = 1
+        documentProduct.save()
+
+        document = Document.objects.get(id=document.id)
+        document.isOpen = False
+        document.save()
+
+        stock = Stock.objects.get(deposit=deposit, product=product)
+        stock.delete()
+
+        stock = Stock.objects.get(deposit=deposit, product=product)
+        self.assertIsNotNone(stock.deletedAt)
 
     def test_013_product_register_in_log_table(self):
         self.skipTest('empty')
 
     def test_014_create_with_deletedAt_not_none(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000014')
+        deposit = auto.createDeposit()
+        product = auto.createProduct()
+        
+        stock = Stock()
+        stock.deposit = deposit
+        stock.product = product
+        stock.value = 1
+        stock.amount = 0
+        stock.deletedAt = djangoTimezone.now()
+        self.assertRaises(ValidationError,stock.save)
 
     def test_015_return_deleted_stock(self):
+        auto = AutoCreate('test_000015')
+        deposit = auto.createDeposit()
+        product = auto.createProduct()
+        entity = auto.createEntity(name='test_000015_001', entityType='CLI')
+        auto.fullDocumentOperation()
+
+        document = Document()
+        document.deposit = deposit
+        document.entity = entity
+        document.documentType = 'OUT'
+        document.save()
+
+        documentProduct = DocumentProduct()
+        documentProduct.document = document
+        documentProduct.product = product
+        documentProduct.value = 1
+        documentProduct.amount = 1
+        documentProduct.save()
+
+        document = Document.objects.get(id=document.id)
+        document.isOpen = False
+        document.save()
+
+        stock = Stock.objects.get(deposit=deposit, product=product)
+        stock.delete()
+
+        stock = Stock.objects.get(deposit=deposit, product=product)
+        stock.deletedAt = None
+        stock.save()
+
+        stock = Stock.objects.get(deposit=deposit, product=product)
+        self.assertIsNone(stock.deletedAt)
+
+    def test_016_function_close(self):
+        self.skipTest('empty')
+    
+    def test_017_function_open(self):
         self.skipTest('empty')
 
 
 class TestCase_009_ModelStockMovement(TestCase):
     
     def test_001_dont_update_register(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000001')
+        deposit = auto.createDeposit()
+        product = auto.createProduct()
+        auto.fullDocumentOperation()
 
-    def test_003_create_with_deletedAt_not_none(self):
-        self.skipTest('empty')
+        stockMovement = StockMovement.objects.get(deposit=deposit,product=product)
+        stockMovement.amount = 100
+        self.assertRaises(ValidationError, stockMovement.save)
 
-    def test_003_create_stockMovement_with_company_closed(self):
-        self.skipTest('empty')
+    def test_002_create_or_update_stockMovement_only_stock(self):
+        auto = AutoCreate('test_000002')
+        deposit = auto.createDeposit()
+        product = auto.createProduct()
 
-    def test_003_create_stockMovement_with_deposit_closed(self):
-        self.skipTest('empty')
+        stockMovement = StockMovement()
+        stockMovement.deposit = deposit
+        stockMovement.product = product
+        stockMovement.value = 1
+        stockMovement.amount = 1
+        self.assertRaises(ValidationError,stockMovement.save)
 
-    def test_003_create_stockMovement_with_product_closed(self):
-        self.skipTest('empty')
+        auto.fullDocumentOperation()
+        stockMovement = StockMovement.objects.get(deposit=deposit, product=product)
+        stockMovement.amount = 100
+        self.assertRaises(ValidationError,stockMovement.save)
 
-    def test_003_create_stockMovement_with_stock_closed(self):
+    def test_016_function_close(self):
+        self.skipTest('empty')
+    
+    def test_017_function_open(self):
         self.skipTest('empty')
 
 

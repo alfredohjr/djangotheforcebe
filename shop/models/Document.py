@@ -7,6 +7,8 @@ from django.utils import timezone
 from shop.models.DocumentProduct import DocumentProduct
 from shop.models.Deposit import Deposit
 
+from shop.models.DocumentLog import DocumentLog
+
 class Document(models.Model):
 
     DOCUMENT_TYPE = (
@@ -41,13 +43,14 @@ class Document(models.Model):
         if self.isOpen:
             self.deletedAt = timezone.now()
             self.save()
+            log = DocumentLog()
+            log.register(id=self.id, table='document', transaction='del', message='delete')
 
 
 @receiver(pre_save, sender=Document)
 def save_document(sender, instance, **kwargs):
     
-    deposit = Deposit.objects.filter(id=instance.deposit.id).exclude(deletedAt=None)
-    if deposit:
+    if instance.deposit.deletedAt:
         raise ValidationError('deposit is closed, verify.')
 
     if instance.entity.deletedAt:
@@ -66,27 +69,46 @@ def save_document(sender, instance, **kwargs):
 
     queryset = Document.objects.filter(id=instance.id)
 
-    if not queryset:
+    if queryset:
+        if queryset[0].deletedAt:
+            if instance.deletedAt != None:
+                raise ValidationError('don\'t alter document closed.')
+
+        if queryset[0].isOpen == instance.isOpen:
+            pass
+        else:
+            queryset_docprod = DocumentProduct.objects.filter(document__id=instance.id)
+            if queryset_docprod:
+                for product in queryset_docprod:
+                    toUpdate = DocumentProduct.objects.get(id=product.id)
+                    if instance.isOpen:
+                        toUpdate.isOpen = True
+                    else:
+                        toUpdate.isOpen = False
+
+                    toUpdate.save()
+    else:
         if instance.deletedAt:
             raise ValidationError('don\'t create document deleted.')
-        else:
-            return True
-    
-    if queryset[0].deletedAt:
-        if instance.deletedAt != None:
-            raise ValidationError('don\'t alter document closed.')
+
+    # for log
+    if queryset:
+        message = []
+        if queryset[0].key != instance.key:
+            message.append(f'key_from={queryset[0].key}, key_to={instance.key}')
         
+        if queryset[0].deposit != instance.deposit:
+            message.append(f'deposit_from={queryset[0].deposit}, deposit_to={instance.deposit}')
 
-    if queryset[0].isOpen == instance.isOpen:
-        pass
-    else:
-        queryset_docprod = DocumentProduct.objects.filter(document__id=instance.id)
-        if queryset_docprod:
-            for product in queryset_docprod:
-                toUpdate = DocumentProduct.objects.get(id=product.id)
-                if instance.isOpen:
-                    toUpdate.isOpen = True
-                else:
-                    toUpdate.isOpen = False
+        if queryset[0].entity != instance.entity:
+            message.append(f'entity_from={queryset[0].entity}, entity_to={instance.entity}')
 
-                toUpdate.save()
+        if queryset[0].documentType != instance.documentType:
+            message.append(f'documentType_from={queryset[0].documentType}, documentType={instance.documentType}')
+
+        if queryset[0].isOpen != instance.isOpen:
+            message.append(f'isOpen_from={queryset[0].isOpen}, isOpen_to={instance.isOpen}')
+
+        if message:
+            log = DocumentLog()
+            log.register(id=instance.id, table='document', transaction='UPD', message='|'.join(message))
