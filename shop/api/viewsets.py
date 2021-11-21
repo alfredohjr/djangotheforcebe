@@ -15,6 +15,10 @@ from shop.models.Stock import Stock
 from shop.models.StockMovement import StockMovement
 
 class CompanyViewSets(viewsets.ModelViewSet):
+    """
+    Manage company.
+
+    """
 
     serializer_class = CompanySerializer
     permission_class = [DjangoModelPermissions]
