@@ -1,5 +1,9 @@
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models.signals import pre_save
 from django.utils import timezone
+from django.dispatch import receiver
+import traceback
 
 class Stock(models.Model):
 
@@ -29,4 +33,46 @@ class Stock(models.Model):
             self.save()
             return True
         else:
-            return False
+            raise ValidationError(f'don\'t delete stock if amount is greater zero.[{self.amount}]')
+
+    def open(self):
+        self.deletedAt = None
+        self.save()
+    
+    def close(self):
+        self.delete()
+
+
+@receiver(pre_save, sender=Stock)
+def pre_save_stock(sender, instance, *args, **kwargs):
+
+    if instance.deposit.company.deletedAt:
+        raise ValidationError('company is close, verify.')
+    
+    if instance.deposit.deletedAt:
+        raise ValidationError('deposit is close, verify.')
+    
+    if instance.product.deletedAt:
+        raise ValidationError('product deleted, verify.')
+    
+    if instance.value < 0:
+        raise ValidationError('don\'t use negative values.')
+
+    stock = Stock.objects.filter(id=instance.id)
+    if stock:
+        if instance.deletedAt and stock[0].amount != 0:
+            raise ValidationError('don\'t delete stock if amount is greater zero.')
+        
+        if stock[0].deletedAt is None and instance.deletedAt:
+            return True
+        
+        if stock[0].deletedAt is not None and instance.deletedAt is None:
+            return True
+
+    else:
+        if instance.deletedAt:
+            raise ValidationError('don\'t create stock deleted.')
+
+    stack = [x.name for x in traceback.extract_stack()]
+    if 'pre_save_DocumentProduct' not in stack:
+        raise ValidationError('only alter stock with document')
