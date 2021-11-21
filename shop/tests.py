@@ -1,13 +1,12 @@
-from datetime import timezone
+# Create your tests here.
+
 import datetime
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone as djangoTimezone
+
 from shop.core.validators.cnpj import ValidateCNPJ
 from shop.core.validators.cpf import ValidateCPF
-
-# Create your tests here.
-
 from shop.models.Company import Company
 from shop.models.CompanyLog import CompanyLog
 from shop.models.Deposit import Deposit
