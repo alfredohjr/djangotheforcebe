@@ -35,6 +35,13 @@ class Deposit(models.Model):
     class Meta:
         unique_together = (('name'),)
 
+    def open(self):
+        self.deletedAt = None
+        self.save()
+
+    def close(self):
+        self.delete()
+
     def delete(self):
         stocks = Stock.objects.filter(deposit__id=self.id)
         for stock in stocks:
@@ -90,9 +97,9 @@ def pre_save_deposit(sender, instance, *args, **kwargs):
 @receiver(post_save,sender=Deposit)
 def post_save_deposit(sender, instance, created, *args, **kwargs):
     if created:
+        log = DepositLog()
+        log.register(id=instance.id,table='deposit',transaction='cre',message='created')
         if instance.deletedAt != None:
-            log = DepositLog()
-            log.register(id=instance.id,table='deposit',transaction='cre',message='created')
             company = Deposit.objects.get(id=instance.id)
             company.deletedAt = None
             company.save()

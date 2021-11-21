@@ -44,6 +44,13 @@ class Product(models.Model):
         log = ProductLog()
         log.register(id=self.id, table='product', transaction='del', message='deleted')
 
+    def open(self):
+        self.deletedAt = None
+        self.save()
+
+    def close(self):
+        self.delete()
+
 @receiver(pre_save,sender=Product)
 def save_product(sender, instance, **kwargs):
     

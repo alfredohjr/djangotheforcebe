@@ -41,8 +41,14 @@ class Price(models.Model):
         self.deletedAt = timezone.now()
         self.save()
         log = ProductLog()
-        log.register(id=self.product.id, table='price', transaction='delete', message=f'delete, price_id={self.id}')
+        log.register(id=self.product.id, table='price', transaction='del', message=f'delete, price_id={self.id}')
 
+    def open(self):
+        self.deletedAt = None
+        self.save()
+
+    def close(self):
+        self.delete()
 
 @receiver(pre_save, sender=Price)
 def pre_save_price(sender, instance, *args, **kwargs):

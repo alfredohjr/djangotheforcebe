@@ -45,6 +45,7 @@ class Company(models.Model):
         self.save()
 
 
+
 @receiver(pre_save,sender=Company)
 def pre_save_company(sender, instance, *args, **kwargs):
 
@@ -76,17 +77,20 @@ def pre_save_company(sender, instance, *args, **kwargs):
         message = []
         if company[0].name != instance.name:
             message.append(f'name_from={company[0].name},name_to={instance.name} ')
-
+        
         if message:
             log.register(id=instance.id,table='company',transaction='upd',message='|'.join(message))
+
+        if instance.deletedAt and company[0].deletedAt is None:
+            log.register(id=instance.id, table='company', transaction='del',message='delete')
 
 
 @receiver(post_save,sender=Company)
 def post_save_company(sender, instance, created, *args, **kwargs):
     if created:
+        log = CompanyLog()
+        log.register(id=instance.id,table='company',transaction='cre',message='created')
         if instance.deletedAt != None:
-            log = CompanyLog()
-            log.register(id=instance.id,table='company',transaction='cre',message='created')
             company = Company.objects.get(id=instance.id)
             company.deletedAt = None
             company.save()

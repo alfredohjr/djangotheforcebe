@@ -9,12 +9,17 @@ from shop.core.validators.cpf import ValidateCPF
 # Create your tests here.
 
 from shop.models.Company import Company
+from shop.models.CompanyLog import CompanyLog
 from shop.models.Deposit import Deposit
+from shop.models.DepositLog import DepositLog
 from shop.models.Document import Document
+from shop.models.DocumentLog import DocumentLog
 from shop.models.DocumentProduct import DocumentProduct
 from shop.models.Entity import Entity
+from shop.models.EntityLog import EntityLog
 from shop.models.Price import Price
 from shop.models.Product import Product
+from shop.models.ProductLog import ProductLog
 from shop.models.Stock import Stock
 from shop.models.StockMovement import StockMovement
 
@@ -278,10 +283,32 @@ class TestCase_001_ModelCompany(TestCase_BaseModel):
         self.skipTest('empty')
 
     def test_010_company_register_in_log_table(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000010')
+        company = auto.createCompany()
+
+        log = CompanyLog.objects.filter(company=company)
+        self.assertTrue(log)
 
     def test_011_companyLog_write_correct(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000011')
+        company = auto.createCompany()
+
+        company = Company.objects.get(id=company.id)
+        company.name = 'test_000011_001'
+        company.save()
+
+        company = Company.objects.get(id=company.id)
+        company.close()
+
+        log = CompanyLog.objects.filter(company=company)
+        self.assertEqual(log[0].table,'COMPANY')
+        self.assertEqual(log[0].transaction,'CRE')
+
+        self.assertEqual(log[1].table,'COMPANY')
+        self.assertEqual(log[1].transaction,'UPD')
+
+        self.assertEqual(log[2].table,'COMPANY')
+        self.assertEqual(log[2].transaction,'DEL')
 
     def test_012_company_size_minimun_of_name_is_10(self):
         self.assertRaises(ValidationError,Company.objects.create,name='test_012')
@@ -413,10 +440,32 @@ class TestCase_002_ModelDeposit(TestCase):
         self.skipTest('empty')
 
     def test_008_deposit_register_in_log_table(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000009')
+        deposit = auto.createDeposit()
+
+        log = DepositLog.objects.filter(deposit=deposit)
+        self.assertTrue(log)
 
     def test_009_depositLog_write_correct(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000009')
+        deposit = auto.createDeposit()
+
+        deposit = Deposit.objects.get(id=deposit.id)
+        deposit.name = 'test_000009_001'
+        deposit.save()
+
+        deposit = Deposit.objects.get(id=deposit.id)
+        deposit.close()
+
+        log = DepositLog.objects.filter(deposit=deposit)
+        self.assertEqual(log[0].table,'DEPOSIT')
+        self.assertEqual(log[0].transaction,'CRE')
+
+        self.assertEqual(log[1].table,'DEPOSIT')
+        self.assertEqual(log[1].transaction,'UPD')
+
+        self.assertEqual(log[2].table,'DEPOSIT')
+        self.assertEqual(log[2].transaction,'DEL')
 
     def test_010_deposit_size_minimun_of_name_is_10(self):
         auto = AutoCreate('test_010')
@@ -482,10 +531,24 @@ class TestCase_002_ModelDeposit(TestCase):
         self.assertIsNone(deposit.deletedAt)
 
     def test_016_function_close(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000016')
+        deposit = auto.createDeposit()
+
+        deposit.close()
+        deposit = Deposit.objects.get(id=deposit.id)
+        self.assertIsNotNone(deposit.deletedAt)
     
     def test_017_function_open(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000017')
+        deposit = auto.createDeposit()
+        deposit.close()
+
+        deposit = Deposit.objects.get(id=deposit.id)
+        self.assertIsNotNone(deposit.deletedAt)
+        
+        deposit.open()
+        deposit = Deposit.objects.get(id=deposit.id)
+        self.assertIsNone(deposit.deletedAt)
 
 
 class TestCase_003_ModelEntity(TestCase):
@@ -529,10 +592,32 @@ class TestCase_003_ModelEntity(TestCase):
         self.skipTest('empty')
     
     def test_005_entity_register_in_log_table(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000005')
+        entity = auto.createEntity()
+
+        log = EntityLog.objects.filter(entity=entity)
+        self.assertTrue(log)
 
     def test_006_entityLog_write_correct(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000006')
+        entity = auto.createEntity()
+
+        entity = Entity.objects.get(id=entity.id)
+        entity.name = 'test_000006_001'
+        entity.save()
+
+        entity = Entity.objects.get(id=entity.id)
+        entity.close()
+
+        log = EntityLog.objects.filter(entity=entity)
+        self.assertEqual(log[0].table,'ENTITY')
+        self.assertEqual(log[0].transaction,'CRE')
+
+        self.assertEqual(log[1].table,'ENTITY')
+        self.assertEqual(log[1].transaction,'UPD')
+
+        self.assertEqual(log[2].table,'ENTITY')
+        self.assertEqual(log[2].transaction,'DEL')
 
     def test_007_entity_size_minimun_of_name_is_10(self):
         entity = Entity()
@@ -632,10 +717,24 @@ class TestCase_003_ModelEntity(TestCase):
         self.assertRaises(ValidationError,entity.save)
 
     def test_016_function_close(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000016')
+        entity = auto.createEntity()
+
+        entity.close()
+        entity = Entity.objects.get(id=entity.id)
+        self.assertIsNotNone(entity.deletedAt)
     
     def test_017_function_open(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000017')
+        entity = auto.createEntity()
+        entity.close()
+
+        entity = Entity.objects.get(id=entity.id)
+        self.assertIsNotNone(entity.deletedAt)
+        
+        entity.open()
+        entity = Entity.objects.get(id=entity.id)
+        self.assertIsNone(entity.deletedAt)
 
 
 class TestCase_004_ModelProduct(TestCase):
@@ -686,7 +785,11 @@ class TestCase_004_ModelProduct(TestCase):
         self.skipTest('empty')
 
     def test_006_productLog_write_correct(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000010')
+        product = auto.createProduct()
+
+        log = ProductLog.objects.filter(product=product)
+        self.assertTrue(log)
 
     def test_007_product_size_minimun_of_name_is_10(self):
         auto = AutoCreate('test_006')
@@ -710,7 +813,25 @@ class TestCase_004_ModelProduct(TestCase):
         self.assertRaises(ValidationError,product.save)
 
     def test_010_product_register_in_log_table(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000010')
+        product = auto.createProduct()
+
+        product = Product.objects.get(id=product.id)
+        product.name = 'test_000010_001'
+        product.save()
+
+        product = Product.objects.get(id=product.id)
+        product.close()
+
+        log = ProductLog.objects.filter(product=product)
+        self.assertEqual(log[0].table,'PRODUCT')
+        self.assertEqual(log[0].transaction,'CRE')
+
+        self.assertEqual(log[1].table,'PRODUCT')
+        self.assertEqual(log[1].transaction,'UPD')
+
+        self.assertEqual(log[2].table,'PRODUCT')
+        self.assertEqual(log[2].transaction,'DEL')
 
     def test_011_create_with_deletedAt_not_none(self):
         product = Product()
@@ -735,10 +856,24 @@ class TestCase_004_ModelProduct(TestCase):
         self.assertIsNone(product.deletedAt)
 
     def test_016_function_close(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000016')
+        product = auto.createProduct()
+
+        product.close()
+        product = Product.objects.get(id=product.id)
+        self.assertIsNotNone(product.deletedAt)
     
     def test_017_function_open(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000017')
+        product = auto.createProduct()
+        product.close()
+
+        product = Product.objects.get(id=product.id)
+        self.assertIsNotNone(product.deletedAt)
+        
+        product.open()
+        product = Product.objects.get(id=product.id)
+        self.assertIsNone(product.deletedAt)
 
 
 class TestCase_005_ModelDocument(TestCase):
@@ -782,7 +917,25 @@ class TestCase_005_ModelDocument(TestCase):
         self.assertIsNone(document.deletedAt)
 
     def test_004_documentLog_write_correct(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000004')
+        document = auto.createDocument()
+
+        document = Document.objects.get(id=document.id)
+        document.key = 'test_000004_001'
+        document.save()
+
+        document = Document.objects.get(id=document.id)
+        document.delete()
+
+        log = DocumentLog.objects.filter(document=document)
+        self.assertEqual(log[0].table,'DOCUMENT')
+        self.assertEqual(log[0].transaction,'CRE')
+
+        self.assertEqual(log[1].table,'DOCUMENT')
+        self.assertEqual(log[1].transaction,'UPD')
+
+        self.assertEqual(log[2].table,'DOCUMENT')
+        self.assertEqual(log[2].transaction,'DEL')
 
     def test_005_create_document_with_company_is_close(self):
         auto = AutoCreate('test_000005')
@@ -926,7 +1079,11 @@ class TestCase_005_ModelDocument(TestCase):
         self.assertRaises(ValidationError,document.save)
 
     def test_017_document_register_in_log_table(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000004')
+        document = auto.createDocument()
+
+        log = DocumentLog.objects.filter(document=document)
+        self.assertTrue(log)
 
     def test_018_create_with_deletedAt_not_none(self):
         auto = AutoCreate('test_000018')
@@ -966,12 +1123,6 @@ class TestCase_005_ModelDocument(TestCase):
         documentProduct.amount = 10
         self.assertRaises(ValidationError,documentProduct.save)
         
-    def test_016_function_close(self):
-        self.skipTest('empty')
-    
-    def test_017_function_open(self):
-        self.skipTest('empty')
-
 
 class TestCase_006_ModelDocumentProduct(TestCase):
 
@@ -1015,7 +1166,30 @@ class TestCase_006_ModelDocumentProduct(TestCase):
         self.assertRaises(ValidationError,documentProduct.delete)
 
     def test_004_documentLog_write_correct(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000004')
+        auto.createDocumentProduct()
+        document = auto.createDocument()
+        documentProduct = auto.createDocumentProduct()
+
+        documentProduct = DocumentProduct.objects.get(id=documentProduct.id)
+        documentProduct.value = 30
+        documentProduct.save()
+
+        documentProduct = DocumentProduct.objects.get(id=documentProduct.id)
+        documentProduct.close()
+
+        log = DocumentLog.objects.filter(document=document)
+        self.assertEqual(log[0].table,'DOCUMENT')
+        self.assertEqual(log[0].transaction,'CRE')
+
+        self.assertEqual(log[1].table,'DOCUMENTPRODUCT')
+        self.assertEqual(log[1].transaction,'CRE')
+
+        self.assertEqual(log[2].table,'DOCUMENTPRODUCT')
+        self.assertEqual(log[2].transaction,'UPD')
+
+        self.assertEqual(log[3].table,'DOCUMENTPRODUCT')
+        self.assertEqual(log[3].transaction,'DEL')
 
     def test_005_value_is_negative(self):
         auto = AutoCreate('test_000005')
@@ -1155,7 +1329,13 @@ class TestCase_006_ModelDocumentProduct(TestCase):
         self.assertRaises(ValidationError,documentProduct.save)
 
     def test_016_documentProduct_register_in_log_table(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000016')
+        auto.createDocumentProduct()
+        document = auto.createDocument()
+        documentProduct = auto.createDocumentProduct()
+
+        log = DocumentLog.objects.filter(document=document)
+        self.assertEqual(len(log),2)
 
     def test_017_value_is_zero(self):
         auto = AutoCreate('test_000005')
@@ -1191,10 +1371,24 @@ class TestCase_006_ModelDocumentProduct(TestCase):
         self.assertIsNone(documentProduct.deletedAt)
 
     def test_016_function_close(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000016')
+        documentProduct = auto.createDocumentProduct()
+
+        documentProduct.close()
+        documentProduct = DocumentProduct.objects.get(id=documentProduct.id)
+        self.assertIsNotNone(documentProduct.deletedAt)
     
     def test_017_function_open(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000017')
+        documentProduct = auto.createDocumentProduct()
+        documentProduct.close()
+
+        documentProduct = DocumentProduct.objects.get(id=documentProduct.id)
+        self.assertIsNotNone(documentProduct.deletedAt)
+        
+        documentProduct.open()
+        documentProduct = DocumentProduct.objects.get(id=documentProduct.id)
+        self.assertIsNone(documentProduct.deletedAt)
 
 
 class TestCase_007_ModelPrice(TestCase):
@@ -1334,7 +1528,29 @@ class TestCase_007_ModelPrice(TestCase):
         self.assertRaises(ValidationError, price.save)
 
     def test_012_price_register_in_log_table(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000012')
+        price = auto.createPrice()
+        product = auto.createProduct()
+
+        price = Price.objects.get(id=price.id)
+        price.value = 30
+        price.save()
+
+        price = Price.objects.get(id=price.id)
+        price.close()
+
+        log = ProductLog.objects.filter(product=product)
+        self.assertEqual(log[0].table,'PRODUCT')
+        self.assertEqual(log[0].transaction,'CRE')
+
+        self.assertEqual(log[1].table,'PRICE')
+        self.assertEqual(log[1].transaction,'CRE')
+
+        self.assertEqual(log[2].table,'PRICE')
+        self.assertEqual(log[2].transaction,'UPD')
+
+        self.assertEqual(log[3].table,'PRICE')
+        self.assertEqual(log[3].transaction,'DEL')
     
     def test_013_hierarchy_of_prices(self):
         self.skipTest('empty')
@@ -1381,10 +1597,24 @@ class TestCase_007_ModelPrice(TestCase):
         self.assertIsNone(price.deletedAt)
 
     def test_016_function_close(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000016')
+        price = auto.createPrice()
+
+        price.close()
+        price = Price.objects.get(id=price.id)
+        self.assertIsNotNone(price.deletedAt)
     
     def test_017_function_open(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000017')
+        price = auto.createPrice()
+        price.close()
+
+        price = Price.objects.get(id=price.id)
+        self.assertIsNotNone(price.deletedAt)
+        
+        price.open()
+        price = Price.objects.get(id=price.id)
+        self.assertIsNone(price.deletedAt)
 
 
 class TestCase_008_ModelStock(TestCase):
@@ -1524,9 +1754,6 @@ class TestCase_008_ModelStock(TestCase):
         stock = Stock.objects.get(deposit=deposit, product=product)
         self.assertIsNotNone(stock.deletedAt)
 
-    def test_013_product_register_in_log_table(self):
-        self.skipTest('empty')
-
     def test_014_create_with_deletedAt_not_none(self):
         auto = AutoCreate('test_000014')
         deposit = auto.createDeposit()
@@ -1574,12 +1801,6 @@ class TestCase_008_ModelStock(TestCase):
         stock = Stock.objects.get(deposit=deposit, product=product)
         self.assertIsNone(stock.deletedAt)
 
-    def test_016_function_close(self):
-        self.skipTest('empty')
-    
-    def test_017_function_open(self):
-        self.skipTest('empty')
-
 
 class TestCase_009_ModelStockMovement(TestCase):
     
@@ -1610,41 +1831,60 @@ class TestCase_009_ModelStockMovement(TestCase):
         stockMovement.amount = 100
         self.assertRaises(ValidationError,stockMovement.save)
 
-    def test_016_function_close(self):
-        self.skipTest('empty')
-    
-    def test_017_function_open(self):
-        self.skipTest('empty')
-
 
 class TestCase_010_ModelCompanyLog(TestCase):
     
     def test_001_dont_update_log_register(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000001')
+        company = auto.createCompany()
+
+        log = CompanyLog.objects.get(company=company)
+        log.message = 'update log'
+        self.assertRaises(ValidationError, log.save)
 
 
 class TestCase_011_ModelDepositLog(TestCase):
 
     def test_001_dont_update_log_register(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000001')
+        deposit = auto.createDeposit()
+
+        log = DepositLog.objects.get(deposit=deposit)
+        log.message = 'update log'
+        self.assertRaises(ValidationError, log.save)
 
 
 class TestCase_012_ModelDocumentLog(TestCase):
 
     def test_001_dont_update_log_register(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000001')
+        document = auto.createDocument()
+
+        log = DocumentLog.objects.get(document=document)
+        log.message = 'update log'
+        self.assertRaises(ValidationError, log.save)
 
 
 class TestCase_013_ModelEntityLog(TestCase):
 
     def test_001_dont_update_log_register(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000001')
+        entity = auto.createEntity()
+
+        log = EntityLog.objects.get(entity=entity)
+        log.message = 'update log'
+        self.assertRaises(ValidationError, log.save)
 
 
 class TestCase_014_ModelProductLog(TestCase):
 
     def test_001_dont_update_log_register(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000001')
+        product = auto.createProduct()
+
+        log = ProductLog.objects.get(product=product)
+        log.message = 'update log'
+        self.assertRaises(ValidationError, log.save)
 
 
 class TestCase_001_ValidatorsCPF(TestCase):

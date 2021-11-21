@@ -44,6 +44,14 @@ class Document(models.Model):
             log = DocumentLog()
             log.register(id=self.id, table='document', transaction='del', message='delete')
 
+    def open(self):
+        self.isOpen = True
+        self.save()
+
+    def close(self):
+        self.isOpen = False
+        self.save()
+
 
 @receiver(pre_save, sender=Document)
 def save_document(sender, instance, **kwargs):

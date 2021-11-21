@@ -33,7 +33,14 @@ class Stock(models.Model):
             self.save()
             return True
         else:
-            raise ValidationError('don\'t delete stock if amount is greater zero.')
+            raise ValidationError(f'don\'t delete stock if amount is greater zero.[{self.amount}]')
+
+    def open(self):
+        self.deletedAt = None
+        self.save()
+    
+    def close(self):
+        self.delete()
 
 
 @receiver(pre_save, sender=Stock)

@@ -31,7 +31,7 @@ class StockMovement(models.Model):
     
     def delete(self):
         return True
-
+    
 
 @receiver(pre_save, sender=StockMovement)
 def pre_save_stockMovement(sender, instance, *args, **kwargs):

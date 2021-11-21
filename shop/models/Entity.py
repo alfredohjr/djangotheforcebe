@@ -47,6 +47,13 @@ class Entity(models.Model):
         self.save()
         log = EntityLog()
         log.register(id=self.id, table='entity', transaction='del', message='delete')
+    
+    def open(self):
+        self.deletedAt = None
+        self.save()
+
+    def close(self):
+        self.delete()
 
 
 @receiver(pre_save,sender=Entity)

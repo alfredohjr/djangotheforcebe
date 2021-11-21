@@ -26,10 +26,17 @@ class DocumentProduct(models.Model):
     deletedAt = models.DateTimeField(null=True, blank=True)
 
     def delete(self):
-
         self.deletedAt = timezone.now()
         self.save()
+        log = DocumentLog()
+        log.register(id=self.document.id, table='DOCUMENTPRODUCT', transaction='DEL', message=f'deleted, documentProduct_id={self.id}')
 
+    def open(self):
+        self.deletedAt = None
+        self.save()
+
+    def close(self):
+        self.delete()
 
 
 @receiver(pre_save,sender=DocumentProduct)
