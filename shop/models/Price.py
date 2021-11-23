@@ -57,6 +57,9 @@ def pre_save_price(sender, instance, *args, **kwargs):
     if price:
         if price[0].deletedAt and instance.deletedAt:
             raise ValidationError('don\'t update deleted price.')
+        
+        if price[0].isValid and instance.isValid:
+            raise ValidationError('don\'t alter active price')
     else:
         if instance.deletedAt:
             raise ValidationError('don\'t create deleted price.')

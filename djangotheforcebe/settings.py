@@ -72,7 +72,8 @@ ROOT_URLCONF = 'djangotheforcebe.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            'shop/templates',],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -136,6 +137,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
+
+MEDIA_ROOT = 'media/' if config.get('MEDIA_ROOT') == None else config.get('MEDIA_ROOT')
+MEDIA_URL = '/media/' if config.get('MEDIA_URL') == None else config.get('MEDIA_URL')
 
 DATETIME_FORMAT='%d/%m/%Y %H:%M'
 

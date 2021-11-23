@@ -27,6 +27,13 @@ class Entity(models.Model):
     identifierType = models.CharField(max_length=3,choices=IDENTIFIER_TYPE)
     entityType = models.CharField(max_length=3,choices=ENTITY_TYPE)
     isActive = models.BooleanField(default=True)
+    email = models.EmailField(null=True, blank=True)
+    logo = models.ImageField(upload_to='entity', null=True, blank=True)
+    cep = models.CharField(max_length=20, null=True, blank=True)
+    state = models.CharField(max_length=50, null=True, blank=True)
+    city = models.CharField(max_length=50, null=True, blank=True)
+    address = models.CharField(max_length=50, null=True, blank=True)
+    complement = models.CharField(max_length=200, null=True, blank=True)
     createdAt = models.DateTimeField(auto_now_add=True)
     updatedAt = models.DateTimeField(auto_now=True)
     deletedAt = models.DateTimeField(null=True, blank=True)
@@ -107,10 +114,30 @@ def pre_save_entity(sender, instance, *args, **kwargs):
         if entity[0].isActive != instance.isActive:
             messages.append(f'isActive_from={entity[0].isActive}, isActive_to={instance.isActive}')
 
+        if entity[0].email != instance.email:
+            messages.append(f'email_from={entity[0].email},email_to={instance.email} ')
+
+        if entity[0].logo != instance.logo:
+            messages.append(f'logo_from={entity[0].logo},logo_to={instance.logo} ')
+
+        if entity[0].cep != instance.cep:
+            messages.append(f'cep_from={entity[0].cep},cep_to={instance.cep} ')
+
+        if entity[0].state != instance.state:
+            messages.append(f'state_from={entity[0].state},state_to={instance.state} ')
+
+        if entity[0].city != instance.city:
+            messages.append(f'city_from={entity[0].city},city_to={instance.city} ')
+
+        if entity[0].address != instance.address:
+            messages.append(f'address_from={entity[0].address},address_to={instance.address} ')
+
+        if entity[0].complement != instance.complement:
+            messages.append(f'complement_from={entity[0].complement},complement_to={instance.complement} ')
+
         if messages:
             log = EntityLog()
             log.register(id=instance.id, table='entity', transaction='upd', message='|'.join(messages))
-
 
 @receiver(post_save, sender=Entity)
 def post_save_entity(sender, instance, created, *args, **kwargs):

@@ -19,6 +19,8 @@ class Product(models.Model):
 
     name = models.CharField(max_length=30)
     margin = models.DecimalField(max_digits=5,decimal_places=3,default=0)
+    logo = models.ImageField(upload_to='product', null=True, blank=True)
+    description = models.TextField(null=True, blank=True)
     createdAt = models.DateTimeField(auto_now_add=True)
     updatedAt = models.DateTimeField(auto_now=True)
     deletedAt = models.DateTimeField(null=True, blank=True)
@@ -82,6 +84,13 @@ def save_product(sender, instance, **kwargs):
 
         if product[0].margin != instance.margin:
             messages.append(f'margin_from={product[0].margin}, margin_to={instance.margin}')
+
+        if product[0].logo != instance.logo:
+            messages.append(f'logo_from={product[0].logo},logo_to={instance.logo} ')
+
+        if product[0].description != instance.description:
+            messages.append(f'description_from={product[0].description},description_to={instance.description} ')
+
 
         if messages:
             log = ProductLog()

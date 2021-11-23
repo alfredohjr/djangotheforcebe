@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.utils import timezone
 
 from shop.models.Company import Company
 from shop.models.Deposit import Deposit
@@ -72,3 +73,44 @@ class DocumentProductSerializer(serializers.ModelSerializer):
     class Meta:
         model=DocumentProduct
         exclude=['deletedAt']
+
+
+class forShopProductSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Product
+        exclude = ['deletedAt','margin','createdAt','updatedAt']
+
+
+class ShopProductSerializer(serializers.ModelSerializer):
+
+    amount = serializers.IntegerField()
+    product = forShopProductSerializer()
+    price1 = serializers.SerializerMethodField()
+    price2 = serializers.SerializerMethodField()
+
+    def get_price1(self, obj):
+        queryset = Price.objects.filter(deposit=obj.deposit, product=obj.product, deletedAt=None)
+        queryset = queryset.filter(priceType='NO')
+        queryset = queryset.filter(isValid=True)
+        queryset = queryset.filter(startedAt__lte=timezone.now())
+
+        queryset = queryset.order_by('-updatedAt').first()
+        if queryset:
+            return queryset.value
+        return None
+
+    def get_price2(self, obj):
+        queryset = Price.objects.filter(deposit=obj.deposit, product=obj.product, deletedAt=None)
+        queryset = queryset.filter(priceType='OF')
+        queryset = queryset.filter(isValid=True)
+        queryset = queryset.filter(startedAt__lte=timezone.now(),finishedAt__gte=timezone.now())
+
+        queryset = queryset.order_by('-updatedAt').first()
+        if queryset:
+            return queryset.value
+        return None
+
+    class Meta:
+        model=Stock
+        exclude=['deletedAt','createdAt','updatedAt','value','deposit']

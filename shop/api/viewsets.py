@@ -1,8 +1,9 @@
 from rest_framework import viewsets
+from rest_framework import permissions
 from rest_framework.permissions import DjangoModelPermissions
 from django.utils import timezone
 
-from shop.api.serializers import CompanySerializer, DepositSerializer, DocumentProductSerializer, DocumentSerializer, EntitySerializer, PriceSerializer, ProductSerializer, StockMovementSerializer, StockSerializer
+from shop.api.serializers import CompanySerializer, DepositSerializer, DocumentProductSerializer, DocumentSerializer, EntitySerializer, PriceSerializer, ProductSerializer, ShopProductSerializer, StockMovementSerializer, StockSerializer
 
 from shop.models.Company import Company
 from shop.models.Deposit import Deposit
@@ -105,4 +106,14 @@ class DocumentProductViewSets(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = DocumentProduct.objects.filter(deletedAt=None)
+        return queryset
+
+
+class ShopProductViewSet(viewsets.ModelViewSet):
+
+    serializer_class = ShopProductSerializer
+    permission_class = [DjangoModelPermissions]
+
+    def get_queryset(self):
+        queryset = Stock.objects.filter(deletedAt=None)
         return queryset

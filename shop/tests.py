@@ -1615,6 +1615,8 @@ class TestCase_007_ModelPrice(TestCase):
         price = Price.objects.get(id=price.id)
         self.assertIsNone(price.deletedAt)
 
+    def test_018_dont_alter_if_isActive_true(self):
+        self.skipTest('empty')
 
 class TestCase_008_ModelStock(TestCase):
 

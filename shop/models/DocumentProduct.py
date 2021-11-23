@@ -25,6 +25,10 @@ class DocumentProduct(models.Model):
     updatedAt = models.DateTimeField(auto_now=True)
     deletedAt = models.DateTimeField(null=True, blank=True)
 
+    @property
+    def total(self):
+        return self.amount * self.value
+
     def delete(self):
         self.deletedAt = timezone.now()
         self.save()

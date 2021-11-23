@@ -11,6 +11,13 @@ class Deposit(models.Model):
 
     name = models.CharField(max_length=30)
     company = models.ForeignKey('Company', on_delete=models.CASCADE)
+    email = models.EmailField(null=True, blank=True)
+    logo = models.ImageField(upload_to='deposit', null=True, blank=True)
+    cep = models.CharField(max_length=20, null=True, blank=True)
+    state = models.CharField(max_length=50, null=True, blank=True)
+    city = models.CharField(max_length=50, null=True, blank=True)
+    address = models.CharField(max_length=50, null=True, blank=True)
+    complement = models.CharField(max_length=200, null=True, blank=True)
     createdAt = models.DateTimeField(auto_now_add=True)
     updatedAt = models.DateTimeField(auto_now=True)
     deletedAt = models.DateTimeField(null=True, blank=True)
@@ -86,6 +93,27 @@ def pre_save_deposit(sender, instance, *args, **kwargs):
         
         if deposit[0].company != instance.company:
             message.append(f'company_from={deposit[0].company.id}, company_to={instance.company.id}')
+
+        if deposit[0].email != instance.email:
+            message.append(f'email_from={deposit[0].email},email_to={instance.email} ')
+
+        if deposit[0].logo != instance.logo:
+            message.append(f'logo_from={deposit[0].logo},logo_to={instance.logo} ')
+
+        if deposit[0].cep != instance.cep:
+            message.append(f'cep_from={deposit[0].cep},cep_to={instance.cep} ')
+
+        if deposit[0].state != instance.state:
+            message.append(f'state_from={deposit[0].state},state_to={instance.state} ')
+
+        if deposit[0].city != instance.city:
+            message.append(f'city_from={deposit[0].city},city_to={instance.city} ')
+
+        if deposit[0].address != instance.address:
+            message.append(f'address_from={deposit[0].address},address_to={instance.address} ')
+
+        if deposit[0].complement != instance.complement:
+            message.append(f'complement_from={deposit[0].complement},complement_to={instance.complement} ')
 
         if message:
             log.register(id=instance.id,table='deposit',transaction='UPD', message='|'.join(message))
