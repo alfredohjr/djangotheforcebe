@@ -1122,6 +1122,8 @@ class TestCase_005_ModelDocument(TestCase):
         documentProduct.amount = 10
         self.assertRaises(ValidationError,documentProduct.save)
         
+    def test_021_update_document_if_isOpen_False(self):
+        self.skipTest('empty')
 
 class TestCase_006_ModelDocumentProduct(TestCase):
 
@@ -1617,6 +1619,7 @@ class TestCase_007_ModelPrice(TestCase):
 
     def test_018_dont_alter_if_isActive_true(self):
         self.skipTest('empty')
+
 
 class TestCase_008_ModelStock(TestCase):
 

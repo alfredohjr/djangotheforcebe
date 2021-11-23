@@ -18,6 +18,8 @@ class Deposit(models.Model):
     city = models.CharField(max_length=50, null=True, blank=True)
     address = models.CharField(max_length=50, null=True, blank=True)
     complement = models.CharField(max_length=200, null=True, blank=True)
+    phone1 = models.CharField(max_length=30, null=True, blank=True)
+    phone2 = models.CharField(max_length=30, null=True, blank=True)
     createdAt = models.DateTimeField(auto_now_add=True)
     updatedAt = models.DateTimeField(auto_now=True)
     deletedAt = models.DateTimeField(null=True, blank=True)
@@ -114,6 +116,12 @@ def pre_save_deposit(sender, instance, *args, **kwargs):
 
         if deposit[0].complement != instance.complement:
             message.append(f'complement_from={deposit[0].complement},complement_to={instance.complement} ')
+
+        if deposit[0].phone1 != instance.phone1:
+            message.append(f'phone1_from={deposit[0].phone1},phone1_to={instance.phone1} ')
+
+        if deposit[0].phone2 != instance.phone2:
+            message.append(f'phone2_from={deposit[0].phone2},phone2_to={instance.phone2} ')
 
         if message:
             log.register(id=instance.id,table='deposit',transaction='UPD', message='|'.join(message))

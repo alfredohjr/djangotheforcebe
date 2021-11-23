@@ -19,16 +19,20 @@ class Document(models.Model):
     entity = models.ForeignKey('Entity',on_delete=models.CASCADE)
     documentType = models.CharField(max_length=3,choices=DOCUMENT_TYPE)
     isOpen = models.BooleanField(default=True)
+    deliveryValue = models.DecimalField(max_digits=10, decimal_places=3, default=0)
     createdAt = models.DateTimeField(auto_now_add=True)
     updatedAt = models.DateTimeField(auto_now=True)
     deletedAt = models.DateTimeField(null=True, blank=True)
 
-    def total(self):
+    def subtotal(self):
         products = DocumentProduct.objects.filter(document__id=self.id)
         total = 0
         for p in products:
             total += p.value * p.amount
         return total
+
+    def total(self):
+        return self.subtotal() + self.deliveryValue
 
     def __str__(self):
         return self.key
@@ -80,6 +84,16 @@ def save_document(sender, instance, **kwargs):
             if instance.deletedAt != None:
                 raise ValidationError('don\'t alter document closed.')
 
+        if not queryset[0].isOpen and not instance.isOpen:
+            raise ValidationError('document is closed, don\'t alter this.')
+
+        if not queryset[0].isOpen and instance.isOpen:
+            instance.key = queryset[0].key
+            instance.deposit = queryset[0].deposit
+            instance.entity = queryset[0].entity
+            instance.documentType = queryset[0].documentType
+            instance.deliveryValue = queryset[0].deliveryValue
+
         if queryset[0].isOpen == instance.isOpen:
             pass
         else:
@@ -114,6 +128,9 @@ def save_document(sender, instance, **kwargs):
 
         if queryset[0].isOpen != instance.isOpen:
             message.append(f'isOpen_from={queryset[0].isOpen}, isOpen_to={instance.isOpen}')
+
+        if queryset[0].deliveryValue != instance.deliveryValue:
+            message.append(f'deliveryValue_from={queryset[0].deliveryValue}, deliveryValue_to={instance.deliveryValue}')
 
         if message:
             log = DocumentLog()
