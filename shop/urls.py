@@ -1,8 +1,10 @@
+from django.conf.urls import url
 from django.urls import path
 from django.urls.conf import include
 from rest_framework import routers
 
-from shop.api.viewsets import CompanyViewSets, DepositViewSets, DocumentProductViewSets, DocumentViewSets, EntityViewSets, PriceViewSets, ProductViewSets, StockMovementViewSets, StockViewSets
+from shop import views
+from shop.api.viewsets import CompanyViewSets, DepositViewSets, DocumentProductViewSets, DocumentViewSets, EntityViewSets, PriceViewSets, ProductViewSets, ShopProductViewSet, StockMovementViewSets, StockViewSets
 
 router = routers.DefaultRouter()
 router.register('company', CompanyViewSets, basename='shopcompany')
@@ -14,7 +16,9 @@ router.register('stockmovement', StockMovementViewSets, basename='shopstockmovem
 router.register('entity', EntityViewSets, basename='shopentity')
 router.register('document', DocumentViewSets, basename='shopdocument')
 router.register('documentproduct', DocumentProductViewSets, basename='shopdocumentproduct')
+router.register('shop', ShopProductViewSet, basename='shop4ecommerce')
 
 urlpatterns = [
     path('api/',include(router.urls)),
+    path('order/<int:document_id>/', views.createOrder, name='order2pdf'),
 ]

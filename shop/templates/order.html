@@ -1,0 +1,165 @@
+
+<head>
+    <title>Pedido {{document.id}}</title>
+
+    <style>
+        @page {
+            size: A4 portrait;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+        }
+
+        .main {
+            width: 100%;
+        }
+
+        .info, .info2 {
+            display: flex;
+            flex-direction: row;
+            height: 150px;
+        }
+
+        .info {
+            border-bottom: 1px black solid;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+        }
+
+        .logo, .detail{
+            width: 50%;
+        }
+
+        [class^="detail-info-"] {
+            margin-top: 10px;
+        }
+
+        .vendor, .client {
+            width: 50%;
+        }
+
+        [class^="vendor-"], [class^="client-"] {
+            margin-top: 10px;
+        }
+
+        .detail-info-order {
+            font-size: 45px;
+        }
+
+        img {
+            height: 100px;
+        }
+
+        table {
+            margin: 10px;
+            width: 98%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        tr > th {
+            background: #b1b1b1;
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+        
+        tr > th, td{
+            border-bottom: 1px black solid;
+        }
+
+        td:nth-child(1) {
+            width: 50%;
+        }
+
+        td:nth-child(3), td:nth-child(4) {
+            width: 20%;
+        }
+
+        .totals-subtotal {
+            display: flex;
+        }
+
+        [class^="subtotal-"] {
+            width: 30%;
+            flex-direction: column-reverse;
+            float: right;
+        }
+
+        .adicional {
+            width: 70%;
+            flex-direction: column;
+        }
+
+        .totals {
+            margin-top: 30px;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="main">
+        <div class="info">
+            <div class="logo">
+                <img src="{{deposit.logo.url}}" alt="" srcset="" >
+            </div>
+            <div class="detail">
+                <div class="detail-info-order">Pedido</div>
+                <div class="detail-info-data">Data: {{document.createdAt|date:"d/m/Y G:i"}}</div>
+                <div class="detail-info-number">Numero: {{document.id}}</div>
+            </div>
+        </div>
+        <div class="info2">
+            <div class="vendor">
+                <div class="vendor-name">Nome: {{deposit.name}}</div>
+                <div class="vendor-address">Endereço: {{deposit.address}}</div>
+                <div class="vendor-fone">Telefone: {{deposit.phone1}}</div>
+                <div class="vendor-email">Email: {{deposit.email}}</div>
+            </div>
+            <div class="client">
+                <div class="client-name">Nome: {{entity.name}}</div>
+                <div class="client-address">Endereço: {{entity.address}}</div>
+                <div class="client-fone">Telefone: {{entity.phone1}}</div>
+                <div class="client-email">Email: {{entity.email}}</div>
+            </div>
+        </div>
+        <div class="itens">
+            <table>
+                <tr>
+                    <th>Descrição</th>
+                    <th>Qtde</th>
+                    <th>Preço</th>
+                    <th>Total</th>
+                </tr>
+                {% for d in documentProduct %}
+                <tr>
+                    <td>{{d.product.name}}</td>
+                    <td>{{d.amount|floatformat}}</td>
+                    <td>R${{d.value|floatformat:2}}</td>
+                    <td>R${{d.total|floatformat:2}}</td>
+                </tr>
+                {% endfor %}                
+            </table>
+        </div>
+        <div class="totals">
+                <div class="totals-subtotal">
+                    <div class="adicional"></div>
+                    <div class="subtotal-title">Subtotal</div>
+                    <div class="subtotal-value">R${{document.subtotal|floatformat:2}}</div>
+                </div>            
+                <div class="totals-subtotal">
+                    <div class="adicional"></div>
+                    <div class="subtotal-title">Taxa de entrega</div>
+                    <div class="subtotal-value">R${{document.deliveryValue|floatformat:2}}</div>
+                </div>
+                <div class="totals-subtotal">
+                    <div class="adicional"></div>
+                    <div class="subtotal-title">Total</div>
+                    <div class="subtotal-value">R${{document.total|floatformat:2}}</div>
+                </div>
+        </div>
+    </div>
+</body>
+</html>
