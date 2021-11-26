@@ -8,7 +8,8 @@ class Group(models.Model):
     name = models.CharField(max_length=30)
     active = models.BooleanField(default=False)
     createdAt = models.DateTimeField(auto_now=True)
-    updatedAt = models.DateTimeField(auto_now_add=True)    
+    updatedAt = models.DateTimeField(auto_now_add=True)
+    deletedAt = models.DateTimeField(null=True, blank=True)    
 
     def __str__(self):
         return self.name
@@ -23,6 +24,7 @@ class Script(models.Model):
     active = models.BooleanField(default=False)
     createdAt = models.DateTimeField(auto_now=True)
     updatedAt = models.DateTimeField(auto_now_add=True)
+    deletedAt = models.DateTimeField(null=True, blank=True)    
 
     def __str__(self):
         return self.name
@@ -41,6 +43,7 @@ class Crontab(models.Model):
     dayOfWeek = models.CharField(max_length=20)
     createdAt = models.DateTimeField(auto_now=True)
     updatedAt = models.DateTimeField(auto_now_add=True)
+    deletedAt = models.DateTimeField(null=True, blank=True)    
 
     def __str__(self):
         return self.name
@@ -55,6 +58,7 @@ class ExecutionLog(models.Model):
     success = models.BooleanField(default=False)
     message = models.TextField(null=True, blank=True)
     createdAt = models.DateTimeField(auto_now=True)
+    deletedAt = models.DateTimeField(null=True, blank=True)    
 
 
 class ExecutionManual(models.Model):
@@ -64,3 +68,5 @@ class ExecutionManual(models.Model):
     run = models.BooleanField(default=True)
     startAt = models.DateTimeField(default=timezone.now)
     finishedAt = models.DateTimeField(blank=True, null=True)
+    deletedAt = models.DateTimeField(null=True, blank=True)    
+

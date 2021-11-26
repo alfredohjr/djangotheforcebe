@@ -19,14 +19,14 @@ from sentry_sdk.integrations.django import DjangoIntegration
 
 config = dotenv_values('.env')
 
-
-sentry_sdk.init(
-    dsn="https://08a4cc9ac46445daad986ecd5606d76f@o342333.ingest.sentry.io/6074248",
-    integrations=[DjangoIntegration()],
-    traces_sample_rate=1.0,
-    send_default_pii=True,
-    ignore_errors=(ValidationError,)
-)
+if config.get('DEBUG') == 'False':
+    sentry_sdk.init(
+        dsn="https://08a4cc9ac46445daad986ecd5606d76f@o342333.ingest.sentry.io/6074248",
+        integrations=[DjangoIntegration()],
+        traces_sample_rate=1.0,
+        send_default_pii=True,
+        ignore_errors=(ValidationError,)
+    )
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
