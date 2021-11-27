@@ -1125,6 +1125,10 @@ class TestCase_005_ModelDocument(TestCase):
     def test_021_update_document_if_isOpen_False(self):
         self.skipTest('empty')
 
+    def test_022_dont_change_isOpen_if_inventory_open(self):
+        self.skipTest('empty')
+
+
 class TestCase_006_ModelDocumentProduct(TestCase):
 
     def test_001_create_documentProduct(self):
@@ -1390,6 +1394,9 @@ class TestCase_006_ModelDocumentProduct(TestCase):
         documentProduct.open()
         documentProduct = DocumentProduct.objects.get(id=documentProduct.id)
         self.assertIsNone(documentProduct.deletedAt)
+
+    def test_018_dont_change_isOpen_if_inventory_open(self):
+        self.skipTest('empty')
 
 
 class TestCase_007_ModelPrice(TestCase):
@@ -1836,6 +1843,105 @@ class TestCase_009_ModelStockMovement(TestCase):
         self.assertRaises(ValidationError,stockMovement.save)
 
 
+class TestCase_016_ModelInventory(TestCase):
+
+    def test_001_create(self):
+        self.skipTest('empty')
+
+    def test_002_update(self):
+        self.skipTest('empty')
+
+    def test_999_delete(self):
+        self.skipTest('empty')
+
+    def test_003_dont_create_with_company_close(self):
+        self.skipTest('empty')
+
+    def test_004_dont_create_with_deposit_close(self):
+        self.skipTest('empty')
+
+    def test_006_dont_start_with_document_open(self):
+        self.skipTest('empty')
+
+    def test_007_dont_alter_deposit_after_started(self):
+        self.skipTest('empty')
+
+    def test_008_write_log(self):
+        self.skipTest('empty')
+
+    def test_009_write_log_correct(self):
+        self.skipTest('empty')
+
+    def test_010_dont_delete_after_inventory_isOpen_false(self):
+        self.skipTest('empty')
+
+    def test_011_change_isOpen_false_stock_is_correct(self):
+        self.skipTest('empty')
+
+    def test_012_change_isOpen_false_document_is_correct(self):
+        self.skipTest('empty')
+
+    def test_013_dont_reopen_inventory(self):
+        self.skipTest('empty')
+
+    def test_014_started_register_valueBefore_inventoryProduct(self):
+        self.skipTest('empty')
+
+    def test_015_started_register_startedAt_in_inventoryProduct(self):
+        self.skipTest('empty')
+
+
+class TestCase_017_ModelInventory(TestCase):
+
+    def test_001_create(self):
+        self.skipTest('empty')
+
+    def test_002_update(self):
+        self.skipTest('empty')
+
+    def test_999_delete(self):
+        self.skipTest('empty')
+
+    def test_003_dont_create_with_company_close(self):
+        self.skipTest('empty')
+
+    def test_004_dont_create_with_deposit_close(self):
+        self.skipTest('empty')
+
+    def test_006_dont_start_with_documentProduct_open(self):
+        self.skipTest('empty')
+
+    def test_008_write_log(self):
+        self.skipTest('empty')
+
+    def test_009_write_log_correct(self):
+        self.skipTest('empty')
+
+    def test_010_dont_delete_after_inventory_isOpen_false(self):
+        self.skipTest('empty')
+
+    def test_011_change_isOpen_false_stock_is_correct(self):
+        self.skipTest('empty')
+
+    def test_012_change_isOpen_false_documentProduct_is_correct(self):
+        self.skipTest('empty')
+
+    def test_013_change_isOpen_false_document_is_correct(self):
+        self.skipTest('empty')
+
+    def test_014_dont_reopen_inventory(self):
+        self.skipTest('empty')
+
+    def test_015_dont_alter_valueBefore_after_inventory_started(self):
+        self.skipTest('empty')
+
+    def test_016_register_log_lastId_stockMovement_inventoryLog(self):
+        self.skipTest('empty')
+
+    def test_017_dont_alter_isOpen_different_inventory(self):
+        self.skipTest('empty')
+
+
 class TestCase_010_ModelCompanyLog(TestCase):
     
     def test_001_dont_update_log_register(self):
@@ -1889,6 +1995,12 @@ class TestCase_014_ModelProductLog(TestCase):
         log = ProductLog.objects.get(product=product)
         log.message = 'update log'
         self.assertRaises(ValidationError, log.save)
+
+
+class TestCase_015_ModelInventoryLog(TestCase):
+
+    def test_001_dont_update_log_register(self):
+        self.skipTest('empty')
 
 
 class TestCase_001_ValidatorsCPF(TestCase):

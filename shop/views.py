@@ -29,3 +29,25 @@ def createOrder(request,document_id):
         response = HttpResponse(pdf, content_type='application/pdf')
         response['Content-Disposition'] = 'attachment; filename="mypdf.pdf"'
         return response
+
+
+def createSaleDocument(request,document_id):
+
+    document = Document.objects.get(id=document_id)
+    documentProduct = DocumentProduct.objects.filter(document=document)
+
+    obj = {}
+    obj['document'] = document
+    obj['entity'] = document.entity
+    obj['deposit'] = document.deposit
+    obj['documentProduct'] = documentProduct
+    return render(request, 'sale.html', obj)
+
+    html_string = render_to_string('sale.html', obj)
+    html = HTML(string=html_string, base_url=request.build_absolute_uri())
+    html.write_pdf('tmp/sale.pdf')
+
+    fs = FileSystemStorage('tmp')
+    with fs.open('sale.pdf') as pdf:
+        response = HttpResponse(pdf, content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename="sale.pdf"'

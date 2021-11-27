@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <title>Cupom</title>
+
+    <style>
+        .main {
+            font-family: Helvetica, sans-serif;
+            width: 400px;
+            min-height: 100vh;
+            margin-left: auto;
+            margin-right: auto;
+            background: #e1e1e1;    
+        }
+
+        .main * {
+            display: flex;
+            flex-direction: column;
+            font-size: 12px;
+        }
+        
+        .row {
+            flex-direction: row;
+        }
+
+        .column {
+            flex-direction: column;
+        }
+
+        .text-left {
+            text-align: left;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        hr {
+            margin-top: 10px;
+            margin-right: 10px;
+            margin-left: 0;
+            margin-right: 0;
+            height: 1px;
+            background: black;
+        }
+
+        div {
+            padding-left: 5px;
+            padding-right: 5px;
+        }
+
+        .col-1 {width: 100%;}
+        .col-1-90 {width: 90%;}
+        .col-1-80 {width: 80%;}
+        .col-1-75 {width: 75%;}
+        .col-2 {width: 50%;}
+        .col-3 {width: 33%;}
+        .col-4 {width: 25%;}
+        .col-5 {width: 20%;}
+        .col-6 {width: 16%;}
+        .col-7 {width: 14%;}
+        .col-8 {width: 12%;}
+        .col-9 {width: 11%;}
+        .col-10 {width: 10%;}
+
+        .client-signature-line {
+            margin-top: 40px;
+            margin-bottom: 5px;
+            border-bottom: black 1px solid;
+            width: 90%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+
+    </style>
+</head>
+<body>
+    <div class="main">
+        <div class="col-1 text-center">{{deposit.name}}</div>
+        <div class="col-1 text-center">{{deposit.razaoSocial}}</div>
+        <div class="col-1 text-center">{{deposit.addressFull}}</div>
+        <div class="col-1 text-center">{{deposit.cityFull}}</div>
+        <div class="col-1 text-center">{{deposit.phone1}} {{deposit.phone2}}</div>
+        <div class="info-1 row">
+            <div class="col-2 text-left">{{deposit.cnpj}}</div>
+            <div class="col-2 text-right">{{deposit.ie}}</div>
+        </div>
+        <div class="col-1">Cliente: {{document.entity.name}}</div>
+        <div class="info-1 row">
+            <div class="col-2 text-left">{{datetime.now}}</div>
+            <div class="col-2">
+                <div class="detail-1 text-right">COMPROVANTE DE COMPRA</div>
+                <div class="detail-2 text-right">Nº {{document.key}}</div>
+            </div>
+        </div>
+        <hr>
+        <div class="main-itens">
+            <div class="header-itens">
+                <div class="col-1 row">
+                    <div class="col-8 text-left">CODIGO</div>
+                    <div class="col-2 text-left">DESCRICAO</div>
+                </div>
+                <div class="header-itens-2 row">
+                    <div class="col-1-75 text-right">QTDE X UNIT</div>
+                    <div class="col-5 text-right">R$ VALOR</div>
+                </div>
+            </div>
+            <hr>
+            {% for docpro in documentProduct %}
+                <div class="detail-itens col-1">
+                    <div class="detail-1 col-1 row">
+                        <div class="text-left col-8">{{docpro.product.id}}</div>
+                        <div class="text-left col-2">{{docpro.product.name}}</div>
+                    </div>
+                    <div class="detail-2 col-1 row">
+                        <div class="col-1-75 text-right">{{docpro.amount|floatformat}}X{{docpro.value|floatformat:2}}</div>
+                        <div class="col-5 text-center">{{docpro.total|floatformat:2}}</div>
+                    </div>
+                </div>
+            {% endfor %}
+            <hr>
+            <div class="subtotal">
+                <div class="total row">
+                    <div class="total-description text-left col-2">Total da nota R$</div>
+                    <div class="total-value text-right col-2">{{document.total|floatformat:2}}</div>
+                </div>
+                <div class="total-received row">
+                    <div class="total-received-description text-left col-2">Valor recebido R$</div>
+                    <div class="total-received-value text-right col-2">{{document.received}}</div>
+                </div>
+                <div class="total-rest row">
+                    <div class="total-rest-description text-left col-2">Troco R$</div>
+                    <div class="total-rest-value text-right col-2">{{document.rest}}</div>
+                </div>
+            </div>
+            <div class="payment">
+                <div class="payment-method">FORMA DE PAGAMENTO: {{DOCUMENT.PAYMENT}}</div>
+                <div class="payment-info">
+                    <div class="payment-info-header row">
+                        <div class="payment-info-header-date col-3 text-left">DATA PGTO</div>
+                        <div class="payment-info-header-value col-3 text-center">R$ VALOR</div>
+                        <div class="payment-info-header-type col-3 text-right">TIPO</div>
+                    </div>
+                    <div class="payment-info-detail row">
+                        <div class="payment-info-detail-date col-3 text-left">01/01/2021</div>
+                        <div class="payment-info-detail-value col-3 text-center">{{document.total|floatformat:2}}</div>
+                        <div class="payment-info-detail-type col-3 text-right">DINHEIRO</div>
+                    </div>
+                </div>
+            </div>
+            <hr>
+            <div class="vendor">VENDEDOR: {{document.user}}</div>
+            <hr>
+            <div class="client-signature">
+                <div class="client-signature-line"></div>
+                <div class="client-signature-name text-center">{{document.entity.name}}</div>
+            </div>
+            <hr>
+            <div class="footer text-center">* OBRIGADO E VOLTE SEMPRE *</div>
+        </div>
+    </div>
+</body>
+</html>

@@ -2,6 +2,7 @@ from rest_framework import viewsets
 from rest_framework import permissions
 from rest_framework.permissions import DjangoModelPermissions
 from django.utils import timezone
+from rest_framework.views import APIView
 
 from shop.api.serializers import CompanySerializer, DepositSerializer, DocumentProductSerializer, DocumentSerializer, EntitySerializer, PriceSerializer, ProductSerializer, ShopProductSerializer, StockMovementSerializer, StockSerializer
 
