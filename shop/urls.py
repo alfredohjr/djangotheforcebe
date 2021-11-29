@@ -22,4 +22,6 @@ urlpatterns = [
     path('api/',include(router.urls)),
     path('order/<int:document_id>/', views.createOrder, name='order2pdf'),
     path('sale/document/<int:document_id>/', views.createSaleDocument, name='doc2pdf'),
+    path('report/product/', views.reportProduct, name='repProduct'),
+    path('report/price/', views.reportPrice, name='repPrice'),
 ]

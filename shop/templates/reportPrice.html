@@ -1,0 +1,36 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Listagem de preços</title>
+    <link rel="stylesheet" type="text/css" href="{% static 'styles.css' %}">
+</head>
+<body>
+    <div class="main report">
+        <h1>Preços</h1>
+        <hr>
+        <div class="row table-header">
+            <div class="col-6">Deposito</div>
+            <div class="col-3">Produto</div>
+            <div class="col-8">Inicio</div>
+            <div class="col-8">Término</div>
+            <div class="col-10">Valor R$</div>
+            <div class="col-15">Tipo</div>
+        </div>
+        {% for p in prices %}
+            <div class="row table-row">
+                <div class="col-6">{{ p.deposit.name }}</div>
+                <div class="col-3">{{ p.product.name }}</div>
+                <div class="col-8">{{ p.startedAt|date:'d/m/Y' }}</div>
+                <div class="col-8">{{ p.finishedAt|date:'d/m/Y' }}</div>
+                <div class="col-10">R${{ p.value|floatformat:2 }}</div>
+                <div class="col-15">{{ p.priceType }}</div>
+            </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

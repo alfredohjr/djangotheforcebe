@@ -1,11 +1,15 @@
 from django.shortcuts import render
 from django.template.loader import render_to_string
 from django.http import HttpResponse
+from django.utils import timezone
+from django.db.models import Q
 from django.core.files.storage import FileSystemStorage
 from weasyprint import HTML
 
 from shop.models.Document import Document
 from shop.models.DocumentProduct import DocumentProduct
+from shop.models.Product import Product
+from shop.models.Price import Price
 
 # Create your views here.
 
@@ -43,11 +47,44 @@ def createSaleDocument(request,document_id):
     obj['documentProduct'] = documentProduct
     return render(request, 'sale.html', obj)
 
-    html_string = render_to_string('sale.html', obj)
-    html = HTML(string=html_string, base_url=request.build_absolute_uri())
-    html.write_pdf('tmp/sale.pdf')
 
-    fs = FileSystemStorage('tmp')
-    with fs.open('sale.pdf') as pdf:
-        response = HttpResponse(pdf, content_type='application/pdf')
-        response['Content-Disposition'] = 'attachment; filename="sale.pdf"'
+def reportProduct(request):
+
+    obj = {}
+    queryset = Product.objects.all()
+
+    obj['products'] = queryset
+    return render(request, 'reportProduct.html', obj)
+
+
+def reportPrice(request):
+
+    print(request.GET)
+    obj = {}
+    queryset = Price.objects.all()
+    queryset = queryset.order_by('deposit__name','product__name','-startedAt')
+    queryset = queryset.filter(isValid=True)
+    queryset = queryset.filter(Q(finishedAt__gte=timezone.now()) | Q(finishedAt=None))
+    queryset = queryset.filter(Q(startedAt__lte=timezone.now()) | Q(finishedAt=None))
+    queryset = queryset.exclude(startedAt=None)
+    
+
+    if request.GET.get('tipo'):
+        tipo = request.GET.get('tipo')
+        queryset = queryset.filter(priceType=tipo)
+    
+    if request.GET.get('inicio'):
+        inicio = request.GET.get('inicio')
+        queryset = queryset.filter(startedAt=inicio)
+
+    valid = []
+    validIndex = []
+    for q in queryset:
+        if [q.deposit,q.product] not in valid:
+            valid.append([q.deposit,q.product,q.priceType])
+            validIndex.append(q.id)
+
+    queryset = queryset.filter(id__in=validIndex)
+    queryset = queryset.order_by('deposit__name','product__name','startedAt')
+    obj['prices'] = queryset
+    return render(request, 'reportPrice.html', obj)

@@ -38,7 +38,7 @@ def run2Django(script,idScript,idCrontab):
     log.info(f'process {script} started id script:{idScript} id crontab:{idCrontab}')
     execLog = ExecutionLog(script_id=idScript,crontab_id=idCrontab,startedAt=timezone.now())
     try:
-        sub = subprocess.check_output('python job/scripts/' + script, env=env, stderr=subprocess.STDOUT)
+        sub = subprocess.check_output(['python','manage.py','runscript',script.replace('.py','')], env=env, stderr=subprocess.STDOUT)
         log.info('process ' + script + ' success')
         execLog.success = True
     except subprocess.CalledProcessError as e:
@@ -194,7 +194,7 @@ class Crontab:
 class Crontab2Django(Crontab):
 
     def loadCrontabFile(self):
-        scripts = Scripts.objects.filter(active=True)
+        scripts = Script.objects.filter(active=True)
         cron = CrontabModel.objects.filter(active=True,script__in=scripts)
         l = []
         for c in cron:
@@ -225,7 +225,7 @@ class Crontab2Django(Crontab):
             
             manual = ExecutionManual.objects.filter(run=True,startAt__lte=timezone.now(),finishedAt=None).exclude(user=0)
             for m in manual:
-                script = Scripts.objects.filter(id=m.script.id,active=True)
+                script = Script.objects.filter(id=m.script.id,active=True)
                 if script:
                     scr = script[0].script
                     idScript = script[0].id

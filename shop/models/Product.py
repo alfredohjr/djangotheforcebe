@@ -25,6 +25,12 @@ class Product(models.Model):
     updatedAt = models.DateTimeField(auto_now=True)
     deletedAt = models.DateTimeField(null=True, blank=True)
 
+    @property
+    def isActive(self):
+        if self.deletedAt:
+            return False
+        return True
+
     def __str__(self):
         return self.name
 

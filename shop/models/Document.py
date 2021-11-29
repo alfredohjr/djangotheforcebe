@@ -20,6 +20,7 @@ class Document(models.Model):
     documentType = models.CharField(max_length=3,choices=DOCUMENT_TYPE)
     isOpen = models.BooleanField(default=True)
     deliveryValue = models.DecimalField(max_digits=10, decimal_places=3, default=0)
+    sendMail = models.BooleanField(default=True)
     createdAt = models.DateTimeField(auto_now_add=True)
     updatedAt = models.DateTimeField(auto_now=True)
     deletedAt = models.DateTimeField(null=True, blank=True)
@@ -85,7 +86,8 @@ def save_document(sender, instance, **kwargs):
                 raise ValidationError('don\'t alter document closed.')
 
         if not queryset[0].isOpen and not instance.isOpen:
-            raise ValidationError('document is closed, don\'t alter this.')
+            if queryset[0].sendMail == instance.sendMail:
+                raise ValidationError('document is closed, don\'t alter this.')
 
         if not queryset[0].isOpen and instance.isOpen:
             instance.key = queryset[0].key

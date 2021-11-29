@@ -53,6 +53,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_extensions',
+    'rest_framework.authtoken',
     'drf_yasg',
     'shop',
     'job',
@@ -187,3 +189,10 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
+
+EMAIL_HOST = config.get('EMAIL_HOST') if config.get('EMAIL_HOST') else 'smtp.gmail.com'
+EMAIL_HOST_USER =  config.get('EMAIL_HOST_USER') # example@gmail.com
+EMAIL_HOST_PASSWORD =  config.get('EMAIL_HOST_PASSWORD') 
+EMAIL_PORT = int(config.get('EMAIL_PORT')) if config.get('EMAIL_PORT') else 587
+EMAIL_USE_TLS = False if config.get('EMAIL_USE_TLS') == 'False' else True
+DEFAULT_FROM_EMAIL = config.get('DEFAULT_FROM_EMAIL')

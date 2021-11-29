@@ -1,0 +1,34 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Listagem de produtos</title>
+    <link rel="stylesheet" type="text/css" href="{% static 'styles.css' %}">
+</head>
+<body>
+    <div class="main report">
+        <h1>Produtos</h1>
+        <hr>
+        <div class="row table-header">
+            <div class="col-2">Descrição</div>
+            <div class="col-4 text-right">Criado em:</div>
+            <div class="col-4 text-right">Ativo</div>
+        </div>
+        {% for p in products %}
+            <div class="row table-row">
+                <div class="col-2">{{ p.name }}</div>
+                <div class="col-4 text-right">{{ p.createdAt|date:'d/m/Y' }}</div>
+                {% if p.isActive %}
+                    <div class="col-4 text-right">Sim</div> 
+                {% else %}
+                    <div class="col-4 text-right">Não</div> 
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
