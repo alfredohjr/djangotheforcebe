@@ -11,6 +11,7 @@ from shop.models.Company import Company
 from shop.models.CompanyLog import CompanyLog
 from shop.models.Deposit import Deposit
 from shop.models.DepositLog import DepositLog
+from shop.models.DocumentFolder import DocumentFolder
 from shop.models.Document import Document
 from shop.models.DocumentLog import DocumentLog
 from shop.models.DocumentProduct import DocumentProduct
@@ -87,12 +88,33 @@ class AutoCreate:
             product = Product.objects.create(name=name)
             return product
 
+    def createDocumentFolder(self,name=None,documentType='IN'):
+        if name is None:
+            name = self.name
+        
+        folder = DocumentFolder.objects.filter(name=name)
+        if folder:
+            return folder[0]
+        
+        folder = DocumentFolder()
+        folder.name = name
+        folder.documentType = documentType
+        folder.stock = True
+        folder.product = True
+        folder.financial = True
+        folder.updateCost = False if documentType == 'OUT' else True
+        folder.createPrice = False if documentType == 'OUT' else True
+        folder.save()
+
+        return folder
+
     def createDocument(self,name=None,documentType='IN'):
         if name is None:
             name = self.name
         deposit = self.createDeposit(name)
         entityType = 'FOR' if documentType == 'IN' else 'CLI'
         entity = self.createEntity(name, entityType=entityType)
+        folder = self.createDocumentFolder(name=name,documentType=documentType)
 
         document = Document.objects.filter(key=name)
         if document:
@@ -101,7 +123,7 @@ class AutoCreate:
             document = Document.objects.create(key=name
                             ,deposit=deposit
                             ,entity=entity
-                            ,documentType=documentType)
+                            ,folder=folder)
             return document
     
     def createDocumentProduct(self,name=None,documentType='IN'):
@@ -198,10 +220,7 @@ class TestCase_BaseModel(TestCase):
         self.skipTest('empty')
 
 
-class TestCase_001_ModelCompany(TestCase_BaseModel):
-
-    def setUp(self):
-        super().setUp()
+class TestCase_001_ModelCompany(TestCase):
 
     def test_001_create_company(self):
         auto = AutoCreate('test_000001')
@@ -238,24 +257,10 @@ class TestCase_001_ModelCompany(TestCase_BaseModel):
 
     def test_999_delete_company(self):
 
-        entity = Entity.objects.create(name='test_entity'
-                                        ,identifier='15.987.787/0001-02'
-                                        ,identifierType='JU'
-                                        ,entityType='FOR')
-        document = Document.objects.create(key='test_document_out'
-                                            ,deposit=self.deposit
-                                            ,entity=entity
-                                            ,documentType='IN')
-        DocumentProduct.objects.create(document=document
-                                        ,product=self.product
-                                        ,amount=1
-                                        ,value=1)
+        auto = AutoCreate('test_company')
+        company = auto.createCompany()
 
-        document = Document.objects.get(key='test_document_out')
-        document.isOpen = False
-        document.save()
-
-        company = Company.objects.get(name='test_company')
+        company = Company.objects.get(id=company.id)
         self.assertIsNone(company.deletedAt)
         company.delete()
         
@@ -987,24 +992,26 @@ class TestCase_005_ModelDocument(TestCase):
         auto = AutoCreate('test_000010')
         deposit = auto.createDeposit()
         entity = auto.createEntity(entityType='CLI',identifierType='FI',identifier='462.924.380-15')
+        folder = auto.createDocumentFolder()
         
         document = Document()
         document.key = 'test_000010'
         document.deposit = deposit
         document.entity = entity
-        document.documentType = 'IN'
+        document.folder = folder
         self.assertRaises(ValidationError,document.save)
 
     def test_011_create_document_if_entity_is_FOR_documentType_is_OUT(self):
         auto = AutoCreate('test_000011')
         deposit = auto.createDeposit()
         entity = auto.createEntity()
+        folder = auto.createDocumentFolder(documentType='OUT')
         
         document = Document()
         document.key = 'test_000011'
         document.deposit = deposit
         document.entity = entity
-        document.documentType = 'OUT'
+        document.folder = folder
         self.assertRaises(ValidationError,document.save)
 
     def test_012_check_product_of_documents_isOpen_is_equals(self):
@@ -1088,11 +1095,13 @@ class TestCase_005_ModelDocument(TestCase):
         auto = AutoCreate('test_000018')
         deposit = auto.createDeposit()
         entity = auto.createEntity()
+        folder = auto.createDocumentFolder()
 
         document = Document()
         document.key = 'test_000018'
         document.deposit = deposit
         document.entity = entity
+        document.folder = folder
         document.deletedAt = djangoTimezone.now()
         self.assertRaises(ValidationError,document.save)
 
@@ -1279,7 +1288,7 @@ class TestCase_006_ModelDocumentProduct(TestCase):
         deposit = auto.createDeposit()
 
         stockMovement = StockMovement.objects.filter(product=product, deposit=deposit)
-        self.assertEqual(document.documentType,'IN')
+        self.assertEqual(document.folder.documentType,'IN')
         self.assertEqual(stockMovement[0].amount,1)
         self.assertEqual(stockMovement[0].movementType,'IN')
 
@@ -1300,7 +1309,7 @@ class TestCase_006_ModelDocumentProduct(TestCase):
 
         stockMovement = StockMovement.objects.filter(product=product, deposit=deposit)
         self.assertEqual(len(stockMovement),1)
-        self.assertEqual(document.documentType,'OUT')
+        self.assertEqual(document.folder.documentType,'OUT')
         self.assertEqual(stockMovement[0].amount,1)
         self.assertEqual(stockMovement[0].movementType,'OUT')
 
@@ -1739,13 +1748,14 @@ class TestCase_008_ModelStock(TestCase):
         auto = AutoCreate('test_000012')
         deposit = auto.createDeposit()
         product = auto.createProduct()
+        folder = auto.createDocumentFolder(name='test_000012_001',documentType='OUT')
         entity = auto.createEntity(name='test_000012_001',entityType='CLI')
         document = auto.fullDocumentOperation()
 
         document = Document()
         document.deposit = deposit
         document.entity = entity
-        document.documentType = 'OUT'
+        document.folder = folder
         document.save()
 
         documentProduct = DocumentProduct()
@@ -1782,13 +1792,14 @@ class TestCase_008_ModelStock(TestCase):
         auto = AutoCreate('test_000015')
         deposit = auto.createDeposit()
         product = auto.createProduct()
+        folder = auto.createDocumentFolder(name='test_000015_001',documentType='OUT')
         entity = auto.createEntity(name='test_000015_001', entityType='CLI')
         auto.fullDocumentOperation()
 
         document = Document()
         document.deposit = deposit
         document.entity = entity
-        document.documentType = 'OUT'
+        document.folder = folder
         document.save()
 
         documentProduct = DocumentProduct()
@@ -1939,6 +1950,48 @@ class TestCase_017_ModelInventory(TestCase):
         self.skipTest('empty')
 
     def test_017_dont_alter_isOpen_different_inventory(self):
+        self.skipTest('empty')
+
+
+class TestCase_018_ModelDocumentFolder(TestCase):
+
+    def test_001_create(self):
+        self.skipTest('empty')
+
+    def test_002_dont_update_flags(self):
+        self.skipTest('empty')
+
+    def test_999_delete(self):
+        self.skipTest('empty')
+    
+    def test_004_dont_delete_document_open(self):
+        self.skipTest('empty')
+
+    def test_005_stock_only_document_product(self):
+        self.skipTest('empty')
+
+    def test_006_product_only_active_product(self):
+        self.skipTest('empty')
+
+    def test_007_financial_send(self):
+        self.skipTest('empty')
+
+    def test_008_order_out_send_email_client(self):
+        self.skipTest('empty')
+
+    def test_009_updateCost(self):
+        self.skipTest('empty')
+
+    def test_010_createPrice(self):
+        self.skipTest('empty')
+
+    def test_011_isActive(self):
+        self.skipTest('empty')
+
+    def test_012_write_documentLog(self):
+        self.skipTest('empty')
+
+    def test_013_write_documentLogCorrect(self):
         self.skipTest('empty')
 
 

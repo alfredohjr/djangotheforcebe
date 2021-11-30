@@ -6,6 +6,7 @@ from django.utils import timezone
 
 from shop.models.DocumentProduct import DocumentProduct
 from shop.models.DocumentLog import DocumentLog
+from shop.models.DocumentFolder import DocumentFolder
 
 class Document(models.Model):
 
@@ -17,7 +18,7 @@ class Document(models.Model):
     key = models.CharField(max_length=100)
     deposit = models.ForeignKey('Deposit',on_delete=models.CASCADE)
     entity = models.ForeignKey('Entity',on_delete=models.CASCADE)
-    documentType = models.CharField(max_length=3,choices=DOCUMENT_TYPE)
+    folder = models.ForeignKey('DocumentFolder', on_delete=models.CASCADE)
     isOpen = models.BooleanField(default=True)
     deliveryValue = models.DecimalField(max_digits=10, decimal_places=3, default=0)
     sendMail = models.BooleanField(default=True)
@@ -39,7 +40,7 @@ class Document(models.Model):
         return self.key
 
     class Meta:
-        unique_together = (('key','documentType'),)
+        unique_together = (('key','deposit','entity','folder'),)
 
     def delete(self):
 
@@ -72,10 +73,10 @@ def save_document(sender, instance, **kwargs):
         if not documentProduct:
             raise ValidationError('document don\'t close without product.')    
     
-    if (instance.documentType == 'IN') and (instance.entity.entityType == 'CLI'):
+    if (instance.folder.documentType == 'IN') and (instance.entity.entityType == 'CLI'):
         raise ValidationError('Document is IN and entity is client, please, verify')
     
-    if (instance.documentType == 'OUT') and (instance.entity.entityType == 'FOR'):
+    if (instance.folder.documentType == 'OUT') and (instance.entity.entityType == 'FOR'):
         raise ValidationError('Document is OUT and entity is For, please, verify')
 
     queryset = Document.objects.filter(id=instance.id)
@@ -93,7 +94,7 @@ def save_document(sender, instance, **kwargs):
             instance.key = queryset[0].key
             instance.deposit = queryset[0].deposit
             instance.entity = queryset[0].entity
-            instance.documentType = queryset[0].documentType
+            instance.folder.documentType = queryset[0].folder.documentType
             instance.deliveryValue = queryset[0].deliveryValue
 
         if queryset[0].isOpen == instance.isOpen:
@@ -112,6 +113,8 @@ def save_document(sender, instance, **kwargs):
     else:
         if instance.deletedAt:
             raise ValidationError('don\'t create document deleted.')
+        if instance.entity.entityType == 'FOR' and instance.folder.documentType == 'OUT':
+            raise ValidationError('don\'t create document OUT with entity FOR')
 
     # for log
     if queryset:
@@ -125,7 +128,7 @@ def save_document(sender, instance, **kwargs):
         if queryset[0].entity != instance.entity:
             message.append(f'entity_from={queryset[0].entity}, entity_to={instance.entity}')
 
-        if queryset[0].documentType != instance.documentType:
+        if queryset[0].folder.documentType != instance.folder.documentType:
             message.append(f'documentType_from={queryset[0].documentType}, documentType={instance.documentType}')
 
         if queryset[0].isOpen != instance.isOpen:

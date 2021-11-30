@@ -84,21 +84,21 @@ def pre_save_DocumentProduct(sender, instance, **kwargs):
                                     , amount = instance.amount)
 
         if instance.isOpen:
-            if instance.document.documentType == 'IN':
+            if instance.document.folder.documentType == 'IN':
                 stockMovement.movementType = 'OUT'
                 stock.amount= F('amount') - instance.amount
-            elif instance.document.documentType == 'OUT':
+            elif instance.document.folder.documentType == 'OUT':
                 stockMovement.movementType = 'IN'
                 stock.amount= F('amount') + instance.amount
         else:
-            if instance.document.documentType == 'IN':
+            if instance.document.folder.documentType == 'IN':
                 stockMovement.movementType = 'IN'
                 stock.amount= F('amount') + instance.amount
-            elif instance.document.documentType == 'OUT':
+            elif instance.document.folder.documentType == 'OUT':
                 stockMovement.movementType = 'OUT'
                 stock.amount= F('amount') - instance.amount
 
-        if instance.document.documentType == 'IN':
+        if instance.document.folder.documentType == 'IN':
             stock.value = instance.value
         
         stock.save()
@@ -106,7 +106,7 @@ def pre_save_DocumentProduct(sender, instance, **kwargs):
 
         # send price to admin.
         if not instance.isOpen:
-            if instance.document.documentType == 'IN':
+            if instance.document.folder.documentType == 'IN':
                 product = Product.objects.get(id=instance.product.id)
                 margin = 1 if product.margin == 0 else product.margin
                 if margin != 1:
