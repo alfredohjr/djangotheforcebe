@@ -151,43 +151,126 @@ class TestCase_001_Group(TestCase):
 class TestCase_002_Script(TestCase):
     
     def test_001_create(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000001')
+        script = auto.createScript()
+
+        script = Script.objects.get(id=script.id)
+        self.assertTrue(script)
 
     def test_002_update(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000002')
+        script = auto.createScript()
+
+        script = Script.objects.get(id=script.id)
+        script.name = 'test_000002_001'
+        script.save()
+
+        script = Script.objects.get(id=script.id)
+        self.assertEquals(script.name,'test_000002_001')
 
     def test_003_delete(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000003')
+        script = auto.createScript()
+
+        script = Script.objects.get(id=script.id)
+        script.delete()
+
+        script = Script.objects.get(id=script.id)
+        self.assertIsNotNone(script.deletedAt)
 
     def test_004_open(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000004')
+        script = auto.createScript()
+
+        script = Script.objects.get(id=script.id)
+        script.delete()
+
+        script = Script.objects.get(id=script.id)
+        script.open()
+
+        script = Script.objects.get(id=script.id)
+        self.assertIsNone(script.deletedAt)
 
     def test_005_close(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000005')
+        script = auto.createScript()
+
+        script = Script.objects.get(id=script.id)
+        script.close()
+
+        script = Script.objects.get(id=script.id)
+        self.assertIsNotNone(script.deletedAt)
 
     def test_006_dont_update_deleted(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000006')
+        script = auto.createScript()
+
+        script = Script.objects.get(id=script.id)
+        script.close()
+
+        script = Script.objects.get(id=script.id)
+        script.name = 'test_000006_001'
+        self.assertRaises(ValidationError,script.save)
 
     def test_007_dont_delete_if_crontab_active(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000006')
+        script = auto.createScript()
+        crontab = auto.createCrontab()
+
+        self.assertRaises(ValidationError,script.close)
 
 
 class TestCase_003_Crontab(TestCase):
     
     def test_001_create(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000001')
+        crontab = auto.createCrontab()
+
+        crontab = Crontab.objects.get(id=crontab.id)
+        self.assertTrue(crontab)
 
     def test_002_update(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000002')
+        crontab = auto.createCrontab()
+
+        crontab = Crontab.objects.get(id=crontab.id)
+        crontab.name = 'test_000002_001'
+        crontab.save()
+
+        crontab = Crontab.objects.get(id=crontab.id)
+        self.assertEquals(crontab.name,'test_000002_001')
 
     def test_003_delete(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000002')
+        crontab = auto.createCrontab()
+
+        crontab = Crontab.objects.get(id=crontab.id)
+        crontab.delete()
+
+        crontab = Crontab.objects.get(id=crontab.id)
+        self.assertIsNotNone(crontab.deletedAt)
 
     def test_004_open(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000002')
+        crontab = auto.createCrontab()
+
+        crontab = Crontab.objects.get(id=crontab.id)
+        crontab.delete()
+        self.assertIsNotNone(crontab.deletedAt)
+
+        crontab = Crontab.objects.get(id=crontab.id)
+        crontab.open()
+
+        crontab = Crontab.objects.get(id=crontab.id)
+        self.assertIsNone(crontab.deletedAt)
 
     def test_005_close(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000002')
+        crontab = auto.createCrontab()
+
+        crontab = Crontab.objects.get(id=crontab.id)
+        crontab.delete()
+        self.assertIsNotNone(crontab.deletedAt)
 
     def test_006_dont_update_deleted(self):
         self.skipTest('empty')

@@ -18,6 +18,31 @@ class Script(models.Model):
     def __str__(self):
         return self.name
 
+    def save(self, *args, **kwargs):
+        if self.pk is None:
+            pass
+        else:
+            obj = Script.objects.get(id=self.id)
+            if obj.deletedAt and self.deletedAt:
+                raise ValidationError('don\'t alter deleted item')
+
+        super().save(*args, **kwargs)
+
+    def delete(self):
+        crontab = Crontab.objects.filter(script__id=self.id,active=True)
+        if crontab:
+            raise ValidationError('don\'t delete with crontab active')
+            
+        self.deletedAt = timezone.now()
+        self.save()
+    
+    def open(self):
+        self.deletedAt = None
+        self.save()
+
+    def close(self):
+        self.delete()
+
 
 class Group(models.Model):
 
@@ -78,6 +103,17 @@ class Crontab(models.Model):
 
     def __str__(self):
         return self.name
+
+    def delete(self):
+        self.deletedAt = timezone.now()
+        self.save()
+    
+    def open(self):
+        self.deletedAt = None
+        self.save()
+
+    def close(self):
+        self.delete()
 
 
 class ExecutionLog(models.Model):
