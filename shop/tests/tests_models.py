@@ -2,6 +2,7 @@
 
 import datetime
 from django.core.exceptions import ValidationError
+from django.db.models.fields import CommaSeparatedIntegerField
 from django.test import TestCase
 from django.utils import timezone as djangoTimezone
 
@@ -17,6 +18,7 @@ from shop.models.DocumentLog import DocumentLog
 from shop.models.DocumentProduct import DocumentProduct
 from shop.models.Entity import Entity
 from shop.models.EntityLog import EntityLog
+from shop.models.Inventory import Inventory
 from shop.models.Price import Price
 from shop.models.Product import Product
 from shop.models.ProductLog import ProductLog
@@ -176,48 +178,23 @@ class AutoCreate:
             price.startedAt = djangoTimezone.now()
             price.save()
             return price
-
-
-class TestCase_BaseModel(TestCase):
-
-    def setUp(self):
-        self.company = Company.objects.create(name='test_company')
-        self.deposit = Deposit.objects.create(name='test_deposit',company=self.company)
-        self.entity = Entity.objects.create(name='test_entity'
-                                        ,identifier='494.678.920-06'
-                                        ,identifierType='FI'
-                                        ,entityType='CLI')
-        self.product = Product.objects.create(name='test_product',margin=10)
-
-        self.createDocument()
-
-    def createDocument(self,close=True):
+    
+    def createInventory(self,name=None):
+        if name is None:
+            name = self.name
         
-        self.document = Document.objects.create(key='test_document'
-                                        ,deposit=self.deposit
-                                        ,entity=self.entity
-                                        ,documentType='OUT')
-        self.documentProduct = DocumentProduct.objects.create(document=self.document
-                                                    ,product=self.product
-                                                    ,amount=1
-                                                    ,value=1)
+        deposit = self.createDeposit(name)
 
-        if close:
-            document = Document.objects.get(key='test_document')
-            document.isOpen = False
-            document.save()
-
-    def _001_create_model(self):
-        self.skipTest('empty')
+        inventory = Inventory.objects.filter(name=name)
+        if inventory:
+            return inventory[0]
         
-    def _002_update_model(self):
-        self.skipTest('empty')
+        inventory = Inventory()
+        inventory.name = name
+        inventory.deposit = deposit
+        inventory.save()
 
-    def _999_delete_company(self):
-        self.skipTest('empty')
-
-    def _012_update_fields_with_after_deleted(self):
-        self.skipTest('empty')
+        return inventory
 
 
 class TestCase_001_ModelCompany(TestCase):
@@ -284,7 +261,12 @@ class TestCase_001_ModelCompany(TestCase):
         self.skipTest('empty')
     
     def test_009_delete_company_with_deposit_inventory_is_open(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000009')
+        company = auto.createCompany()
+        auto.createDeposit()
+        inventory = auto.createInventory()
+
+        self.assertRaises(ValidationError,company.close)
 
     def test_010_company_register_in_log_table(self):
         auto = AutoCreate('test_000010')
@@ -441,7 +423,11 @@ class TestCase_002_ModelDeposit(TestCase):
         self.skipTest('empty')
     
     def test_007_delete_deposit_with_inventory_is_open(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000004')
+        deposit = auto.createDeposit()
+        inventory = auto.createInventory()
+
+        self.assertRaises(ValidationError,deposit.close)
 
     def test_008_deposit_register_in_log_table(self):
         auto = AutoCreate('test_000009')

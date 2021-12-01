@@ -8,6 +8,7 @@ from django.core.exceptions import ValidationError
 from shop.models.Deposit import Deposit
 from shop.models.Document import Document
 from shop.models.Stock import Stock
+from shop.models.Inventory import Inventory
 from shop.models.CompanyLog import CompanyLog
 
 class Company(models.Model):
@@ -43,8 +44,12 @@ class Company(models.Model):
         if document:
             return False
 
+        inventory = Inventory.objects.filter(isOpen=True, deposit__in=deposits)
+        if inventory:
+            raise ValidationError('don\'t delete with inventory is open')
+
         self.deletedAt = timezone.now()
-        self.save()
+        self.save() 
     
     def close(self):
         self.delete()
@@ -71,7 +76,6 @@ def pre_save_company(sender, instance, *args, **kwargs):
                 for stock in stocks:
                     if stock.amount != 0:
                         raise ValidationError('don\'t delete company if product stock is not 0.')
-
 
     company = Company.objects.filter(id=instance.id)
     if company:

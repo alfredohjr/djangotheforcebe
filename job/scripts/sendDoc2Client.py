@@ -4,6 +4,7 @@ import datetime
 from django.core.mail import EmailMessage
 
 from shop.models.Document import Document
+from shop.models.DocumentFolder import DocumentFolder
 from job.core.log.logger import setup_logger
 
 log = setup_logger('sendDoc2Client')
@@ -25,7 +26,9 @@ class Request:
 def run():
 
     queryset = Document.objects.all()
-    queryset = queryset.filter(documentType='OUT')
+    folder = DocumentFolder.objects.filter(isActive=True, order=True, documentType='OUT')
+
+    queryset = queryset.filter(folder__in=folder)
     queryset = queryset.filter(isOpen=False)
     queryset = queryset.filter(deletedAt=None)
     queryset = queryset.filter(sendMail=True)

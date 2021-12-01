@@ -34,9 +34,14 @@ def run(script):
 
 def run2Django(script,idScript,idCrontab):
 
+    execLog = ExecutionLog(script_id=idScript,crontab_id=idCrontab)
+    execLog.save()
+
     sem.acquire()
     log.info(f'process {script} started id script:{idScript} id crontab:{idCrontab}')
-    execLog = ExecutionLog(script_id=idScript,crontab_id=idCrontab,startedAt=timezone.now())
+    execLog = ExecutionLog.objects.get(id=execLog.id)
+    execLog.startedAt = timezone.now()
+    
     try:
         sub = subprocess.check_output(['python','manage.py','runscript',script.replace('.py','')], env=env, stderr=subprocess.STDOUT)
         log.info('process ' + script + ' success')
