@@ -97,6 +97,12 @@ def save_document(sender, instance, **kwargs):
             instance.folder.documentType = queryset[0].folder.documentType
             instance.deliveryValue = queryset[0].deliveryValue
 
+            documentProduct = DocumentProduct.objects.filter(document__id=instance.id)
+            if documentProduct:
+                for docprod in documentProduct:
+                    if docprod.product.isInventoryOpen():
+                        raise ValidationError('don\'t reopen document with product inventory')
+
         if queryset[0].isOpen == instance.isOpen:
             pass
         else:

@@ -19,6 +19,7 @@ from shop.models.DocumentProduct import DocumentProduct
 from shop.models.Entity import Entity
 from shop.models.EntityLog import EntityLog
 from shop.models.Inventory import Inventory
+from shop.models.InventoryProduct import InventoryProduct
 from shop.models.Price import Price
 from shop.models.Product import Product
 from shop.models.ProductLog import ProductLog
@@ -195,6 +196,25 @@ class AutoCreate:
         inventory.save()
 
         return inventory
+    
+    def createInventoryProduct(self,name=None):
+        if name == None:
+            name = self.name
+        
+        inventory = self.createInventory(name=name)
+        product = self.createProduct(name=name)
+
+        inventoryProduct = InventoryProduct()
+        inventoryProduct.inventory = inventory
+        inventoryProduct.product = product
+        inventoryProduct.value = 1
+        inventoryProduct.valueBefore = 1
+        inventoryProduct.startedAt = djangoTimezone.now()
+        inventoryProduct.isOpen = True
+        inventoryProduct.save()
+
+        return inventoryProduct
+
 
 
 class TestCase_001_ModelCompany(TestCase):
@@ -245,7 +265,11 @@ class TestCase_001_ModelCompany(TestCase):
         self.assertIsNotNone(company.deletedAt)
 
     def test_004_delete_company_with_product_inventory(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000004')
+        company = auto.createCompany()
+        inventoryProduct = auto.createInventoryProduct()
+        
+        self.assertRaises(ValidationError,company.delete)
     
     def test_006_delete_company_with_document_open(self):
         auto = AutoCreate(name='test_000006')
@@ -410,7 +434,12 @@ class TestCase_002_ModelDeposit(TestCase):
         self.assertIsNotNone(deposit.deletedAt)
 
     def test_004_delete_deposit_with_product_inventory(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000004')
+        deposit = auto.createDeposit()
+        auto.createInventoryProduct()
+
+        self.assertRaises(ValidationError,deposit.delete)
+
     
     def test_005_delete_deposit_with_document_open(self):
         auto = AutoCreate('test_000005')
@@ -772,7 +801,11 @@ class TestCase_004_ModelProduct(TestCase):
         self.assertRaises(ValidationError,product.delete)
 
     def test_005_delete_with_inventory_is_open(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000005')
+        product = auto.createProduct()
+        auto.createInventoryProduct()
+
+        self.assertRaises(ValidationError,product.delete)
 
     def test_006_productLog_write_correct(self):
         auto = AutoCreate('test_000010')
@@ -1121,8 +1154,16 @@ class TestCase_005_ModelDocument(TestCase):
         self.skipTest('empty')
 
     def test_022_dont_change_isOpen_if_inventory_open(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000022')
+        documentProduct = auto.createDocumentProduct()
+        self.assertRaises(ValidationError, auto.createInventoryProduct)
+        document = auto.fullDocumentOperation()
+        auto.createInventoryProduct()
 
+        document = Document.objects.get(id=document.id)
+        document.isOpen=True
+        self.assertRaises(ValidationError,document.save)
+        
 
 class TestCase_006_ModelDocumentProduct(TestCase):
 

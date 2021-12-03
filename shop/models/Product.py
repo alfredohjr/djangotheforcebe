@@ -1,4 +1,3 @@
-from django.core.checks import messages
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
@@ -8,6 +7,8 @@ from django.db import connection
 
 from shop.models.Stock import Stock
 from shop.models.ProductLog import ProductLog
+from shop.models.InventoryProduct import InventoryProduct
+from shop.models.DocumentProduct import DocumentProduct
 
 def my_custom_sql(sql):
     with connection.cursor() as cursor:
@@ -58,6 +59,26 @@ class Product(models.Model):
 
     def close(self):
         self.delete()
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            if self.deletedAt:
+                if self.isInventoryOpen():
+                    raise ValidationError('don\'t delete product with inventory is open')
+
+        return super().save(*args, **kwargs)
+
+    def isInventoryOpen(self):
+        inventoryProduct = InventoryProduct.objects.filter(product__id=self.id, isOpen=True)
+        if inventoryProduct:
+            return inventoryProduct
+    
+    def isDocumentOpen(self):
+        documentProduct = DocumentProduct.objects.filter(product__id=self.id,isOpen=True)
+        if documentProduct:
+            return documentProduct
+
+
 
 @receiver(pre_save,sender=Product)
 def save_product(sender, instance, **kwargs):

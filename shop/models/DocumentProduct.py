@@ -6,7 +6,6 @@ from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 
 from shop.models.Price import Price
-from shop.models.Product import Product
 from shop.models.Stock import Stock
 from shop.models.StockMovement import StockMovement
 from shop.models.DocumentLog import DocumentLog
@@ -107,8 +106,7 @@ def pre_save_DocumentProduct(sender, instance, **kwargs):
         # send price to admin.
         if not instance.isOpen:
             if instance.document.folder.documentType == 'IN':
-                product = Product.objects.get(id=instance.product.id)
-                margin = 1 if product.margin == 0 else product.margin
+                margin = 1 if instance.product.margin == 0 else instance.product.margin
                 if margin != 1:
                     margin = decimal.Decimal((margin/100)+1)
 
