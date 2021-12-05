@@ -59,7 +59,6 @@ def reportProduct(request):
 
 def reportPrice(request):
 
-    print(request.GET)
     obj = {}
     queryset = Price.objects.all()
     queryset = queryset.order_by('deposit__name','product__name','-startedAt')

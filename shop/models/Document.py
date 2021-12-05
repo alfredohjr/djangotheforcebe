@@ -6,7 +6,6 @@ from django.utils import timezone
 
 from shop.models.DocumentProduct import DocumentProduct
 from shop.models.DocumentLog import DocumentLog
-from shop.models.DocumentFolder import DocumentFolder
 
 class Document(models.Model):
 

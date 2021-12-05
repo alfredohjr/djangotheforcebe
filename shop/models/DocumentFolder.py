@@ -1,6 +1,8 @@
+from django.core.exceptions import ValidationError
 from django.db import models
-from django.dispatch import receiver
-from django.db.models.signals import pre_save, post_save
+from django.utils import timezone
+
+from shop.models.Document import Document
 
 class DocumentFolder(models.Model):
 
@@ -22,11 +24,22 @@ class DocumentFolder(models.Model):
     updatedAt = models.DateTimeField(auto_now=True)
     deletedAt = models.DateTimeField(blank=True, null=True)
 
+    def save(self, *args, **kwargs):
+        if self.pk:
+            document = Document.objects.filter(folder=self)
+            obj = DocumentFolder.objects.get(id=self.id)
+            if document and obj.deletedAt == self.deletedAt:
+                raise ValidationError('don\'t update folder if document exists')
 
-@receiver(pre_save, sender=DocumentFolder)
-def pre_save_DocumentProduct(sender, instance, *args, **kwargs):
-    pass
-
-@receiver(post_save, sender=DocumentFolder)
-def post_save_DocumentProduct(sender, instance, created, *args, **kwargs):
-    pass
+            document = document.filter(isOpen=True)
+            if document:
+                raise ValidationError('don\'t close folder with document open')
+            
+        if self.stock and self.product is False:
+            raise ValidationError('only created flag stock with product')
+        
+        super().save(*args, **kwargs)
+    
+    def delete(self):
+        self.deletedAt = timezone.now()
+        self.save()

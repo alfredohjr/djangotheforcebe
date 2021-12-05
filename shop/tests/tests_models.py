@@ -19,6 +19,7 @@ from shop.models.DocumentProduct import DocumentProduct
 from shop.models.Entity import Entity
 from shop.models.EntityLog import EntityLog
 from shop.models.Inventory import Inventory
+from shop.models.InventoryLog import InventoryLog
 from shop.models.InventoryProduct import InventoryProduct
 from shop.models.Price import Price
 from shop.models.Product import Product
@@ -111,29 +112,29 @@ class AutoCreate:
 
         return folder
 
-    def createDocument(self,name=None,documentType='IN'):
+    def createDocument(self,name=None,documentType='IN',key=None):
         if name is None:
             name = self.name
         deposit = self.createDeposit(name)
         entityType = 'FOR' if documentType == 'IN' else 'CLI'
-        entity = self.createEntity(name, entityType=entityType)
-        folder = self.createDocumentFolder(name=name,documentType=documentType)
+        entity = self.createEntity(name if key == None else key, entityType=entityType)
+        folder = self.createDocumentFolder(name=name if key == None else key,documentType=documentType)
 
-        document = Document.objects.filter(key=name)
+        document = Document.objects.filter(key=name if key == None else key)
         if document:
             return document[0]
         else:    
-            document = Document.objects.create(key=name
+            document = Document.objects.create(key=name if key == None else key
                             ,deposit=deposit
                             ,entity=entity
                             ,folder=folder)
             return document
     
-    def createDocumentProduct(self,name=None,documentType='IN'):
+    def createDocumentProduct(self,name=None,documentType='IN',amount=1,key=None):
         if name is None:
             name = self.name
 
-        document = self.createDocument(name,documentType=documentType)
+        document = self.createDocument(name,documentType=documentType,key=key)
         product = self.createProduct(name)
         
         documentProduct = DocumentProduct.objects.filter(
@@ -146,15 +147,15 @@ class AutoCreate:
 
         documentProduct = DocumentProduct.objects.create(document=document
                                                         ,product=product
-                                                        ,amount=1
+                                                        ,amount=amount
                                                         ,value=1)
         return documentProduct
     
-    def fullDocumentOperation(self,name=None,documentType='IN'):
+    def fullDocumentOperation(self,name=None,documentType='IN',amount=1, key=None):
         if name is None:
             name = self.name
-        document = self.createDocument(documentType=documentType)
-        documentProduct = self.createDocumentProduct(name,documentType=documentType)
+        document = self.createDocument(documentType=documentType, key=key)
+        documentProduct = self.createDocumentProduct(name,documentType=documentType,amount=amount,key=key)
         document = Document.objects.get(id=documentProduct.document.id)
         document.isOpen = False
         document.save()
@@ -184,6 +185,10 @@ class AutoCreate:
         if name is None:
             name = self.name
         
+        self.createDocumentFolder(name='INVENTARIO ENTRADA',documentType='IN')
+        self.createDocumentFolder(name='INVENTARIO SAIDA',documentType='OUT')
+        self.createEntity(name=f'{name}INVIN',entityType='FOR')
+        self.createEntity(name=f'{name}INVOUT',entityType='CLI')
         deposit = self.createDeposit(name)
 
         inventory = Inventory.objects.filter(name=name)
@@ -191,7 +196,7 @@ class AutoCreate:
             return inventory[0]
         
         inventory = Inventory()
-        inventory.name = name
+        inventory.name = name 
         inventory.deposit = deposit
         inventory.save()
 
@@ -208,8 +213,6 @@ class AutoCreate:
         inventoryProduct.inventory = inventory
         inventoryProduct.product = product
         inventoryProduct.value = 1
-        inventoryProduct.valueBefore = 1
-        inventoryProduct.startedAt = djangoTimezone.now()
         inventoryProduct.isOpen = True
         inventoryProduct.save()
 
@@ -1156,7 +1159,11 @@ class TestCase_005_ModelDocument(TestCase):
     def test_022_dont_change_isOpen_if_inventory_open(self):
         auto = AutoCreate('test_000022')
         documentProduct = auto.createDocumentProduct()
-        self.assertRaises(ValidationError, auto.createInventoryProduct)
+
+        inventoryProduct = auto.createInventoryProduct()
+        inventoryProduct.startedAt = djangoTimezone.now()
+        self.assertRaises(ValidationError, inventoryProduct.save)
+
         document = auto.fullDocumentOperation()
         auto.createInventoryProduct()
 
@@ -1884,115 +1891,400 @@ class TestCase_009_ModelStockMovement(TestCase):
 class TestCase_016_ModelInventory(TestCase):
 
     def test_001_create(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000001')
+        inventory = auto.createInventory()
+
+        inventory = Inventory.objects.get(id=inventory.id)
+        self.assertTrue(inventory)
 
     def test_002_update(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000001')
+        inventory = auto.createInventory()
+
+        inventory = Inventory.objects.get(id=inventory.id)
+        inventory.name = 'test_000001_001'
+        inventory.save()
+
+        inventory = Inventory.objects.get(id=inventory.id)
+        self.assertEqual(inventory.name,'test_000001_001')
 
     def test_999_delete(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000999')
+        inventory = auto.createInventory()
+
+        inventory = Inventory.objects.get(id=inventory.id)
+        inventory.delete()
+
+        inventory = Inventory.objects.get(id=inventory.id)
+        self.assertIsNotNone(inventory.deletedAt)
 
     def test_003_dont_create_with_company_close(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000003')
+        company = auto.createCompany()
+        
+        company = Company.objects.get(id=company.id)
+        company.close()
+
+        self.assertRaises(ValidationError,auto.createInventory)
 
     def test_004_dont_create_with_deposit_close(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000004')
+        deposit = auto.createDeposit()
+
+        deposit = Deposit.objects.get(id=deposit.id)
+        deposit.close()
+
+        self.assertRaises(ValidationError,auto.createInventory)
 
     def test_006_dont_start_with_document_open(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000006')
+        documentProduct = auto.createDocumentProduct()
+
+        inventoryProduct = auto.createInventoryProduct()
+        inventory = auto.createInventory()
+        inventory.startedAt = djangoTimezone.now()
+        self.assertRaises(ValidationError, inventory.save)
 
     def test_007_dont_alter_deposit_after_started(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000007')
+        inventory = auto.createInventory()
+        inventoryProduct = auto.createInventoryProduct()
+
+        inventory = Inventory.objects.get(id=inventory.id)
+        inventory.startedAt = djangoTimezone.now()
+        inventory.save()
+
+        deposit2 = auto.createDeposit('test_000007_002')
+        inventory = Inventory.objects.get(id=inventory.id)
+        inventory.deposit = deposit2
+        self.assertRaises(ValidationError, inventory.save)
 
     def test_008_write_log(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000008')
 
-    def test_009_write_log_correct(self):
-        self.skipTest('empty')
+        inventory = auto.createInventory()
+        log = InventoryLog.objects.filter(inventory__id=inventory.id)
+        self.assertEqual(log[0].transaction,'cre')
+
+        inventory = Inventory.objects.get(id=inventory.id)
+        inventory.name = 'test_000008_001'
+        inventory.save()
+
+        log = InventoryLog.objects.filter(inventory__id=inventory.id)
+        self.assertEqual(log[1].transaction,'upd')
+        
+        inventory = Inventory.objects.get(id=inventory.id)
+        inventory.delete()
+
+        log = InventoryLog.objects.filter(inventory__id=inventory.id)
+        self.assertEqual(log[2].transaction,'del')
 
     def test_010_dont_delete_after_inventory_isOpen_false(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000010')
+        inventoryProduct = auto.createInventoryProduct()
 
-    def test_011_change_isOpen_false_stock_is_correct(self):
-        self.skipTest('empty')
+        inventory = Inventory.objects.get(id=inventoryProduct.inventory.id)
+        inventory.startedAt = djangoTimezone.now()        
+        inventory.save()
 
-    def test_012_change_isOpen_false_document_is_correct(self):
-        self.skipTest('empty')
+        inventory.isOpen = False
+        inventory.save()
+
+        inventory = Inventory.objects.get(id=inventory.id)        
+        self.assertRaises(ValidationError,inventory.delete)
+
+    def test_011_change_isOpen_to_false_stock_is_correct(self):
+        auto = AutoCreate('test_000011')
+        auto.createInventoryProduct()
+        inventory = auto.createInventory()
+
+        inventory.startedAt = djangoTimezone.now()        
+        inventory.save()
+
+        inventory.isOpen = False
+        inventory.save()
+
+        product = auto.createProduct()
+        deposit = auto.createDeposit()
+
+        stock = Stock.objects.filter(deposit=deposit, product=product)
+        self.assertEqual(stock[0].amount,1)
+
+    def test_012_change_isOpen_to_false_document_is_correct(self):
+        auto = AutoCreate('test_000012')
+        auto.fullDocumentOperation(amount=100)
+        deposit = auto.createDeposit()
+        product = auto.createProduct()
+        
+        inventory = auto.createInventory()
+        auto.createInventoryProduct()
+        inventory.startedAt = djangoTimezone.now()
+        inventory.save()
+        
+        inventory.isOpen = False
+        inventory.save()
+
+        document = Document.objects.filter(key__contains='[INV]')
+        self.assertFalse(document[0].isOpen)
 
     def test_013_dont_reopen_inventory(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000013')
+        auto.createInventoryProduct()
+        inventory = auto.createInventory()
+
+        inventory.startedAt = djangoTimezone.now()        
+        inventory.save()
+
+        inventory.isOpen = False
+        inventory.save()
+
+        inventory = Inventory.objects.get(id=inventory.id)
+        self.assertFalse(inventory.isOpen)
+
+        inventory.isOpen = True
+        self.assertRaises(ValidationError,inventory.save)
 
     def test_014_started_register_valueBefore_inventoryProduct(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000014')
+        auto.fullDocumentOperation(amount=120)
+
+        inventoryProduct = auto.createInventoryProduct()
+        self.assertEqual(inventoryProduct.valueBefore,0)
+        inventory = auto.createInventory()
+        inventory.startedAt = djangoTimezone.now()
+        inventory.save()
+
+        inventoryProduct = InventoryProduct.objects.get(id=inventoryProduct.id)
+        self.assertEqual(inventoryProduct.valueBefore,120)
 
     def test_015_started_register_startedAt_in_inventoryProduct(self):
+        auto = AutoCreate('test_000015')
+        inventory = auto.createInventory()
+        inventoryProduct = auto.createInventoryProduct()
+
+        inventory.startedAt = djangoTimezone.now()
+        inventory.save()
+
+        inventoryProduct = InventoryProduct.objects.get(id=inventoryProduct.id)
+        self.assertIsNotNone(inventoryProduct.startedAt)
+
+    def test_016_dont_close_inventory_if_not_started(self):
+        auto = AutoCreate('test_000015')
+        inventory = auto.createInventory()
+        auto.createInventoryProduct()
+
+        inventory.isOpen = False
+        self.assertRaises(ValidationError, inventory.save)
+    
+    def test_017_dont_create_and_start_same_time(self):
         self.skipTest('empty')
 
 
-class TestCase_017_ModelInventory(TestCase):
+class TestCase_017_ModelInventoryProduct(TestCase):
 
     def test_001_create(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000001')
+        inventoryProduct = auto.createInventoryProduct()
 
-    def test_002_update(self):
-        self.skipTest('empty')
+        self.assertTrue(inventoryProduct)
 
     def test_999_delete(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000999')
+        inventoryProduct = auto.createInventoryProduct()
+
+        inventoryProduct.delete()
+        inventoryProduct = InventoryProduct.objects.get(id=inventoryProduct.id)
+        self.assertIsNotNone(inventoryProduct.deletedAt)
 
     def test_003_dont_create_with_company_close(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000003')
+        company = auto.createCompany()
+        company.delete()
+        
+        self.assertRaises(ValidationError,auto.createInventoryProduct)
 
     def test_004_dont_create_with_deposit_close(self):
-        self.skipTest('empty')
-
-    def test_006_dont_start_with_documentProduct_open(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000004')
+        deposit = auto.createDeposit()
+        deposit.delete()
+        
+        self.assertRaises(ValidationError,auto.createInventoryProduct)
 
     def test_008_write_log(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000008')
+        inventoryProduct = auto.createInventoryProduct()
 
-    def test_009_write_log_correct(self):
-        self.skipTest('empty')
+        inventoryProduct.value = 10
+        inventoryProduct.save()
+
+        inventoryProduct.delete()
+        
+        log = InventoryLog.objects.filter(inventory=inventoryProduct.inventory,table='INVENTORYPRODUCT')
+        self.assertEqual(log[0].transaction,'cre')
+        self.assertEqual(log[1].transaction,'upd')
+        self.assertEqual(log[2].transaction,'del')
 
     def test_010_dont_delete_after_inventory_isOpen_false(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000010')
+        inventory = auto.createInventory()
+        inventoryProduct = auto.createInventoryProduct()
+
+        inventory.startedAt = djangoTimezone.now()        
+        inventory.save()
+
+        inventory.isOpen = False
+        inventory.save()
+
+        self.assertRaises(ValidationError, inventoryProduct.delete)
 
     def test_011_change_isOpen_false_stock_is_correct(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000011')
+        deposit = auto.createDeposit()
+        product = auto.createProduct()
+        auto.fullDocumentOperation(amount=15)
+        auto.fullDocumentOperation(documentType='OUT',amount=100, key='test_000011_002')
+
+        stock = Stock.objects.get(deposit=deposit, product=product)
+        self.assertEqual(stock.amount,-85)
+
+        inventory = auto.createInventory()
+        auto.createInventoryProduct()
+        inventory.startedAt = djangoTimezone.now()
+        inventory.save()
+
+        inventory.isOpen = False
+        inventory.save()
+
+        stock = Stock.objects.get(deposit=deposit, product=product)
+        self.assertEqual(stock.amount,1)
+
+        auto = AutoCreate('test_000011_003')
+        deposit = auto.createDeposit()
+        product = auto.createProduct()
+        auto.fullDocumentOperation(documentType='IN',amount=100)
+        
+        stock = Stock.objects.get(deposit=deposit, product=product)
+        self.assertEqual(stock.amount,100)
+        
+        inventory = auto.createInventory()
+        auto.createInventoryProduct()
+        inventory.startedAt = djangoTimezone.now()
+        inventory.save()
+
+        inventory.isOpen = False
+        inventory.save()
+
+        stock = Stock.objects.get(deposit=deposit, product=product)
+        self.assertEqual(stock.amount,1)
 
     def test_012_change_isOpen_false_documentProduct_is_correct(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000012')
+        deposit = auto.createDeposit()
+        product = auto.createProduct()
+       
+        inventory = auto.createInventory()
+        auto.createInventoryProduct()
+        inventory.startedAt = djangoTimezone.now()
+        inventory.save()
+
+        inventory.isOpen = False
+        inventory.save()
+
+        document = Document.objects.filter(deposit=deposit)
+        documentProduct = DocumentProduct.objects.filter(document__in=document, product=product)
+        self.assertEqual(document[0].folder.name,'INVENTARIO ENTRADA')
+        self.assertEqual(documentProduct[0].amount,1)
 
     def test_013_change_isOpen_false_document_is_correct(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000013')
+        deposit = auto.createDeposit()
+        product = auto.createProduct()
+        auto.fullDocumentOperation(amount=1000)
+       
+        inventory = auto.createInventory()
+        auto.createInventoryProduct()
+        inventory.startedAt = djangoTimezone.now()
+        inventory.save()
 
-    def test_014_dont_reopen_inventory(self):
-        self.skipTest('empty')
+        inventory.isOpen = False
+        inventory.save()
+
+        document = Document.objects.filter(deposit=deposit)
+        self.assertEqual(document[1].folder.name,'INVENTARIO SAIDA')
+        self.assertFalse(document[1].isOpen)
+
+    def test_014_dont_reopen_inventoryProduct(self):
+        auto = AutoCreate('test_000014')
+        deposit = auto.createDeposit()
+        product = auto.createProduct()
+       
+        inventory = auto.createInventory()
+        inventoryProduct = auto.createInventoryProduct()
+        inventory.startedAt = djangoTimezone.now()
+        inventory.save()
+
+        inventory.isOpen = False
+        inventory.save()
+
+        inventoryProduct = InventoryProduct.objects.get(id=inventoryProduct.id)
+        inventoryProduct.isOpen = True
+        self.assertRaises(ValidationError,inventoryProduct.save)
 
     def test_015_dont_alter_valueBefore_after_inventory_started(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000014')
+        deposit = auto.createDeposit()
+        product = auto.createProduct()
+       
+        inventory = auto.createInventory()
+        inventoryProduct = auto.createInventoryProduct()
+        inventory.startedAt = djangoTimezone.now()
+        inventory.save()
 
-    def test_016_register_log_lastId_stockMovement_inventoryLog(self):
-        self.skipTest('empty')
+        inventoryProduct.valueBefore = 10000
+        self.assertRaises(ValidationError, inventoryProduct.save)
 
     def test_017_dont_alter_isOpen_different_inventory(self):
+        self.skipTest('empty')
+
+    def test_018_dont_update_after_startedAt(self):
         self.skipTest('empty')
 
 
 class TestCase_018_ModelDocumentFolder(TestCase):
 
     def test_001_create(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000018')
+        documentFolder = auto.createDocumentFolder()
+
+        documentFolder = DocumentFolder.objects.get(id=documentFolder.id)
+        self.assertTrue(documentFolder)
 
     def test_002_dont_update_flags(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000002')
+        folder = auto.createDocumentFolder()
+        
+        folder.stock = True
+        folder.save()
+
+        auto.fullDocumentOperation()
+
+        folder.stock = False
+        self.assertRaises(ValidationError, folder.save)
 
     def test_999_delete(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000999')
+        folder = auto.createDocumentFolder()
+
+        folder.delete()
+        folder  = DocumentFolder.objects.get(id=folder.id)
+        self.assertIsNotNone(folder.deletedAt)
     
     def test_004_dont_delete_document_open(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000004')
+        folder = auto.createDocumentFolder()
+        document = auto.createDocumentProduct()
+
+        self.assertRaises(ValidationError, folder.delete)
 
     def test_005_stock_only_document_product(self):
         self.skipTest('empty')

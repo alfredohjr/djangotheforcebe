@@ -11,7 +11,7 @@ class InventoryLog(models.Model):
         ('DEL','Delete'),
     )
 
-    entity = models.ForeignKey('Inventory',on_delete=models.CASCADE)
+    inventory = models.ForeignKey('Inventory',on_delete=models.CASCADE)
     table = models.CharField(max_length=50)
     transaction = models.CharField(max_length=3)
     message = models.TextField()

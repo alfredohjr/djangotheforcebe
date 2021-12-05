@@ -3,6 +3,9 @@ from django.db.models import fields
 
 from shop.models.Company import Company
 from shop.models.Deposit import Deposit
+from shop.models.DocumentFolder import DocumentFolder
+from shop.models.Inventory import Inventory
+from shop.models.InventoryProduct import InventoryProduct
 from shop.models.Product import Product
 from shop.models.Price import Price
 from shop.models.Stock import Stock
@@ -65,3 +68,6 @@ admin.site.register(Price, PriceAdmin)
 admin.site.register(Stock, StockAdmin)
 admin.site.register(Entity, MainAdmin)
 admin.site.register(Document, DocumentAdmin)
+admin.site.register(DocumentFolder)
+admin.site.register(Inventory)
+admin.site.register(InventoryProduct)
