@@ -66,10 +66,13 @@ def save_document(sender, instance, **kwargs):
 
     if instance.entity.deletedAt:
         raise ValidationError('entity is closed, verify.')
+    
+    if instance.folder.order and instance.folder.documentType == 'OUT':
+        instance.sendMail = True
 
     if instance.isOpen == False:
         documentProduct = DocumentProduct.objects.filter(document=instance.id,deletedAt=None)
-        if not documentProduct:
+        if not documentProduct and instance.folder.product:
             raise ValidationError('document don\'t close without product.')    
     
     if (instance.folder.documentType == 'IN') and (instance.entity.entityType == 'CLI'):

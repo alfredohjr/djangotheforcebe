@@ -45,6 +45,9 @@ class DocumentProduct(models.Model):
 @receiver(pre_save,sender=DocumentProduct)
 def pre_save_DocumentProduct(sender, instance, **kwargs):
 
+    if instance.document.folder.product is False:
+        raise ValidationError('document don\'t accept products, verify')
+
     documentProduct = DocumentProduct.objects.filter(id=instance.id)
     if not documentProduct:
         if instance.deletedAt is not None:
@@ -67,7 +70,7 @@ def pre_save_DocumentProduct(sender, instance, **kwargs):
     if documentProduct[0].deletedAt and instance.deletedAt:
         raise ValidationError('don\'t alter document product deleted')
     
-    if documentProduct[0].isOpen != instance.isOpen:
+    if documentProduct[0].isOpen != instance.isOpen and instance.document.folder.stock:
 
         queryset_stock = Stock.objects.filter(deposit=instance.document.deposit,product=instance.product)
 
@@ -103,28 +106,28 @@ def pre_save_DocumentProduct(sender, instance, **kwargs):
         stock.save()
         stockMovement.save()
 
-        # send price to admin.
-        if not instance.isOpen:
-            if instance.document.folder.documentType == 'IN':
-                margin = 1 if instance.product.margin == 0 else instance.product.margin
-                if margin != 1:
-                    margin = decimal.Decimal((margin/100)+1)
+    # send price to admin.
+    if not instance.isOpen and instance.document.folder.createPrice:
+        if instance.document.folder.documentType == 'IN':
+            margin = 1 if instance.product.margin == 0 else instance.product.margin
+            if margin != 1:
+                margin = decimal.Decimal((margin/100)+1)
 
-                Price.objects.filter(deposit = instance.document.deposit
-                                   , product = instance.product
-                                   , isValid = False).delete()
-                now = timezone.now()
-                now = now - timezone.timedelta(hours=now.hour
-                                                ,minutes=now.minute
-                                                ,seconds=now.second
-                                                , microseconds=now.microsecond)
-                tomorrow = now + timezone.timedelta(days=1)
-                price = Price(deposit = instance.document.deposit
-                            , product = instance.product
-                            , value = instance.value * margin
-                            , startedAt = tomorrow
-                            , priceType='NO')
-                price.save()
+            Price.objects.filter(deposit = instance.document.deposit
+                                , product = instance.product
+                                , isValid = False).delete()
+            now = timezone.now()
+            now = now - timezone.timedelta(hours=now.hour
+                                            ,minutes=now.minute
+                                            ,seconds=now.second
+                                            , microseconds=now.microsecond)
+            tomorrow = now + timezone.timedelta(days=1)
+            price = Price(deposit = instance.document.deposit
+                        , product = instance.product
+                        , value = instance.value * margin
+                        , startedAt = tomorrow
+                        , priceType='NO')
+            price.save()
 
     # for logs
     if documentProduct:
