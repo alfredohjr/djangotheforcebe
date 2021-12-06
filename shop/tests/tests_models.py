@@ -1002,12 +1002,14 @@ class TestCase_005_ModelDocument(TestCase):
         auto = AutoCreate('test_000009')
         deposit = auto.createDeposit()
         entity = auto.createEntity()
+        folder = auto.createDocumentFolder()
 
         document = Document()
         document.key = 'test_000009'
         document.deposit = deposit
         document.entity = entity
         document.isOpen = False
+        document.folder = folder
         self.assertRaises(ValidationError,document.save)
 
     def test_010_create_document_if_entity_is_CLI_documentType_is_IN(self):
@@ -2279,38 +2281,114 @@ class TestCase_018_ModelDocumentFolder(TestCase):
         folder  = DocumentFolder.objects.get(id=folder.id)
         self.assertIsNotNone(folder.deletedAt)
     
-    def test_004_dont_delete_document_open(self):
+    def test_003_dont_delete_document_open(self):
         auto = AutoCreate('test_000004')
         folder = auto.createDocumentFolder()
         document = auto.createDocumentProduct()
 
         self.assertRaises(ValidationError, folder.delete)
 
-    def test_005_stock_only_document_product(self):
-        self.skipTest('empty')
+    def test_004_if_stock_is_true_product_is_true(self):
+        folder = DocumentFolder()
+        folder.name = 'test_000005'
+        folder.stock = True
+        folder.product = False
+        self.assertRaises(ValidationError, folder.save)
 
-    def test_006_product_only_active_product(self):
-        self.skipTest('empty')
+    def test_005_product_is_true_accept_documentProduct(self):
+        auto = AutoCreate('test_000005')
+        deposit = auto.createDeposit()
+        entity = auto.createEntity()
+        product = auto.createProduct()
+
+        folder = DocumentFolder()
+        folder.name = 'test_000005'
+        folder.product = True
+        folder.documentType = 'IN'
+        folder.save()
+
+        document = Document()
+        document.key = 'test_000005'
+        document.folder = folder
+        document.deposit = deposit
+        document.entity = entity
+        document.save()
+
+        documentProduct = DocumentProduct()
+        documentProduct.document = document
+        documentProduct.product = product
+        documentProduct.value = 1
+        documentProduct.amount = 1
+        documentProduct.save()
+
+        documentProduct = DocumentProduct.objects.get(id=documentProduct.id)
+        self.assertTrue(documentProduct)
+
+    def test_006_product_is_false_dont_accept_documentProduct(self):
+        auto = AutoCreate('test_000006')
+        deposit = auto.createDeposit()
+        entity = auto.createEntity()
+        product = auto.createProduct()
+
+        folder = DocumentFolder()
+        folder.name = 'test_000006'
+        folder.product = False
+        folder.documentType = 'IN'
+        folder.save()
+
+        document = Document()
+        document.key = 'test_000006'
+        document.folder = folder
+        document.deposit = deposit
+        document.entity = entity
+        document.save()
+
+        documentProduct = DocumentProduct()
+        documentProduct.document = document
+        documentProduct.product = product
+        documentProduct.value = 1
+        documentProduct.amount = 1
+        self.assertRaises(ValidationError, documentProduct.save)
+
+        document.close()
 
     def test_007_financial_send(self):
         self.skipTest('empty')
 
-    def test_008_order_out_send_email_client(self):
+    def test_008_order_out_default_send_email_true(self):
+        auto = AutoCreate('test_000008')
+        deposit = auto.createDeposit()
+        entity = auto.createEntity(entityType='CLI')
+
+        folder = DocumentFolder()
+        folder.name = 'test_000008'
+        folder.order = True
+        folder.documentType = 'OUT'
+        folder.save()
+
+        document = Document()
+        document.key = 'test_000008'
+        document.folder = folder
+        document.deposit = deposit
+        document.entity = entity
+        document.sendMail = False
+        document.save()
+
+        document = Document.objects.get(id=document.id)
+        self.assertTrue(document.sendMail)
+
+    def test_009_updateCost_if_product_is_true(self):
         self.skipTest('empty')
 
-    def test_009_updateCost(self):
-        self.skipTest('empty')
-
-    def test_010_createPrice(self):
-        self.skipTest('empty')
-
-    def test_011_isActive(self):
-        self.skipTest('empty')
+    def test_010_createPrice_if_product_is_true(self):
+        folder = DocumentFolder()
+        folder.name = 'test_000010'
+        folder.product = False
+        folder.createPrice = True
+        folder.documentType = 'IN'
+        self.assertRaises(ValidationError,folder.save)
 
     def test_012_write_documentLog(self):
-        self.skipTest('empty')
-
-    def test_013_write_documentLogCorrect(self):
         self.skipTest('empty')
 
 
