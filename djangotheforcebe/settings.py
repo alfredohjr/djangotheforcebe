@@ -58,7 +58,8 @@ INSTALLED_APPS = [
     'drf_yasg',
     'shop',
     'job',
-    'permission'
+    'permission',
+    'backoffice',
 ]
 
 MIDDLEWARE = [
@@ -196,3 +197,5 @@ EMAIL_HOST_PASSWORD =  config.get('EMAIL_HOST_PASSWORD')
 EMAIL_PORT = int(config.get('EMAIL_PORT')) if config.get('EMAIL_PORT') else 587
 EMAIL_USE_TLS = False if config.get('EMAIL_USE_TLS') == 'False' else True
 DEFAULT_FROM_EMAIL = config.get('DEFAULT_FROM_EMAIL')
+
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'

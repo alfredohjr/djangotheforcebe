@@ -2453,6 +2453,12 @@ class TestCase_015_ModelInventoryLog(TestCase):
         self.skipTest('empty')
 
 
+class TestCase_015_ModelDocumentFolderLog(TestCase):
+
+    def test_001_dont_update_log_register(self):
+        self.skipTest('empty')
+
+
 class TestCase_001_ValidatorsCPF(TestCase):
 
     def test_001_check_with_valid_chars(self):

@@ -18,6 +18,7 @@ class Document(models.Model):
     deposit = models.ForeignKey('Deposit',on_delete=models.CASCADE)
     entity = models.ForeignKey('Entity',on_delete=models.CASCADE)
     folder = models.ForeignKey('DocumentFolder', on_delete=models.CASCADE)
+    paymentMethod = models.ForeignKey('backoffice.PaymentMethod', on_delete=models.CASCADE)
     isOpen = models.BooleanField(default=True)
     deliveryValue = models.DecimalField(max_digits=10, decimal_places=3, default=0)
     sendMail = models.BooleanField(default=True)
