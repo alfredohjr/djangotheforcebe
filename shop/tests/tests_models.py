@@ -94,7 +94,7 @@ class AutoCreate:
             product = Product.objects.create(name=name)
             return product
 
-    def createDocumentFolder(self,name=None,documentType='IN'):
+    def createDocumentFolder(self,name=None,documentType='IN',financial=False):
         if name is None:
             name = self.name
         
@@ -107,7 +107,7 @@ class AutoCreate:
         folder.documentType = documentType
         folder.stock = True
         folder.product = True
-        folder.financial = True
+        folder.financial = financial
         folder.updateCost = False if documentType == 'OUT' else True
         folder.createPrice = False if documentType == 'OUT' else True
         folder.save()
