@@ -14,3 +14,6 @@ class PayReceive(models.Model):
     createdAt = models.DateTimeField(auto_now_add=True)
     updatedAt = models.DateTimeField(auto_now=True)
     deletedAt = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f'{self.document.key} parcela {self.portionNumber}X de R${round(self.value,2)}'

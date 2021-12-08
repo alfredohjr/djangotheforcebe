@@ -3,6 +3,8 @@ from django.db import models
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.utils import timezone
+from backoffice.models.PaymentMethod import PaymentMethod
+from backoffice.models.PayReceive import PayReceive
 
 from shop.models.DocumentProduct import DocumentProduct
 from shop.models.DocumentLog import DocumentLog
@@ -99,12 +101,45 @@ def save_document(sender, instance, **kwargs):
             instance.entity = queryset[0].entity
             instance.folder.documentType = queryset[0].folder.documentType
             instance.deliveryValue = queryset[0].deliveryValue
+            instance.paymentMethod = queryset[0].paymentMethod
 
             documentProduct = DocumentProduct.objects.filter(document__id=instance.id)
             if documentProduct:
                 for docprod in documentProduct:
                     if docprod.product.isInventoryOpen():
                         raise ValidationError('don\'t reopen document with product inventory')
+
+        if queryset[0].isOpen and instance.isOpen is False:
+            if instance.folder.financial:
+
+                if instance.paymentMethod.inCash:
+                    payReceive = PayReceive()
+                    payReceive.document = instance
+                    payReceive.paymentMethod = instance.paymentMethod
+                    payReceive.portionNumber = 0
+                    payReceive.value = instance.total
+                    payReceive.valueExtra = 0
+                    payReceive.valueDiscount = 0
+                    payReceive.paymentDateFixed = timezone.now()
+                    payReceive.paymentDateAccomplished = timezone.now()
+                    payReceive.save()
+
+                dueDate = instance.paymentMethod.dueDate
+                if instance.paymentMethod.isPortion:
+                    portionAmount = instance.paymentMethod.portionAmount
+
+                    for pa in range(1,portionAmount+1):
+
+                        payReceive = PayReceive()
+                        payReceive.document = instance
+                        payReceive.paymentMethod = instance.paymentMethod
+                        payReceive.portionNumber = pa
+                        payReceive.value = instance.total() / portionAmount
+                        payReceive.valueExtra = 0
+                        payReceive.valueDiscount = 0
+                        payReceive.paymentDateFixed = timezone.now() + timezone.timedelta(days=30*pa)
+                        payReceive.save()
+
 
         if queryset[0].isOpen == instance.isOpen:
             pass

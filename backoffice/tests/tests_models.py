@@ -1,6 +1,33 @@
 from django.test import TestCase
 
+from backoffice.models.PaymentMethod import PaymentMethod
 # Create your tests here.
+
+class AutoCreate:
+
+    def __init__(self, name):
+        self.name = name
+
+    def createPaymentMethod(self, name=None):
+        if name is None:
+            name = self.name
+        
+        paymentMethod = PaymentMethod.objects.filter(name=name)
+        if paymentMethod:
+            return paymentMethod[0]
+        
+        paymentMethod = PaymentMethod()
+        paymentMethod.name = name
+        paymentMethod.isPortion = True
+        paymentMethod.portionAmount = 5
+        paymentMethod.dueDate = 6
+        paymentMethod.percentagePerDelay = 3
+        paymentMethod.percentageDiscount = 8
+        paymentMethod.save()
+
+        return paymentMethod
+        
+
 
 class TestCase_001_ModelPaymentMethod(TestCase):
 

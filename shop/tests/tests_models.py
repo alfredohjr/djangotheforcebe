@@ -2,9 +2,9 @@
 
 import datetime
 from django.core.exceptions import ValidationError
-from django.db.models.fields import CommaSeparatedIntegerField
 from django.test import TestCase
 from django.utils import timezone as djangoTimezone
+from backoffice.models.PaymentMethod import PaymentMethod
 
 from shop.core.validators.cnpj import ValidateCNPJ
 from shop.core.validators.cpf import ValidateCPF
@@ -26,6 +26,8 @@ from shop.models.Product import Product
 from shop.models.ProductLog import ProductLog
 from shop.models.Stock import Stock
 from shop.models.StockMovement import StockMovement
+
+from backoffice.tests.tests_models import AutoCreate as BackOfficeAutoCreate
 
 class AutoCreate:
 
@@ -112,6 +114,14 @@ class AutoCreate:
 
         return folder
 
+    def createPaymentMethod(self,name=None):
+        if name is None:
+            name = self.name
+
+        boAuto = BackOfficeAutoCreate(name=name)
+        return boAuto.createPaymentMethod()
+
+
     def createDocument(self,name=None,documentType='IN',key=None):
         if name is None:
             name = self.name
@@ -119,14 +129,17 @@ class AutoCreate:
         entityType = 'FOR' if documentType == 'IN' else 'CLI'
         entity = self.createEntity(name if key == None else key, entityType=entityType)
         folder = self.createDocumentFolder(name=name if key == None else key,documentType=documentType)
+        paymentMethod = self.createPaymentMethod(name=name)
 
         document = Document.objects.filter(key=name if key == None else key)
         if document:
             return document[0]
-        else:    
+        else:
+            
             document = Document.objects.create(key=name if key == None else key
                             ,deposit=deposit
                             ,entity=entity
+                            ,paymentMethod=paymentMethod
                             ,folder=folder)
             return document
     
@@ -1788,10 +1801,13 @@ class TestCase_008_ModelStock(TestCase):
         entity = auto.createEntity(name='test_000012_001',entityType='CLI')
         document = auto.fullDocumentOperation()
 
+        payment = auto.createPaymentMethod()
+
         document = Document()
         document.deposit = deposit
         document.entity = entity
         document.folder = folder
+        document.paymentMethod = payment
         document.save()
 
         documentProduct = DocumentProduct()
@@ -1832,10 +1848,13 @@ class TestCase_008_ModelStock(TestCase):
         entity = auto.createEntity(name='test_000015_001', entityType='CLI')
         auto.fullDocumentOperation()
 
+        payment = auto.createPaymentMethod()
+
         document = Document()
         document.deposit = deposit
         document.entity = entity
         document.folder = folder
+        document.paymentMethod = payment
         document.save()
 
         documentProduct = DocumentProduct()
@@ -2307,11 +2326,14 @@ class TestCase_018_ModelDocumentFolder(TestCase):
         folder.documentType = 'IN'
         folder.save()
 
+        payment = auto.createPaymentMethod()
+
         document = Document()
         document.key = 'test_000005'
         document.folder = folder
         document.deposit = deposit
         document.entity = entity
+        document.paymentMethod = payment
         document.save()
 
         documentProduct = DocumentProduct()
@@ -2336,11 +2358,14 @@ class TestCase_018_ModelDocumentFolder(TestCase):
         folder.documentType = 'IN'
         folder.save()
 
+        payment = auto.createPaymentMethod()
+
         document = Document()
         document.key = 'test_000006'
         document.folder = folder
         document.deposit = deposit
         document.entity = entity
+        document.paymentMethod = payment
         document.save()
 
         documentProduct = DocumentProduct()
@@ -2366,12 +2391,15 @@ class TestCase_018_ModelDocumentFolder(TestCase):
         folder.documentType = 'OUT'
         folder.save()
 
+        payment = auto.createPaymentMethod()
+
         document = Document()
         document.key = 'test_000008'
         document.folder = folder
         document.deposit = deposit
         document.entity = entity
         document.sendMail = False
+        document.paymentMethod = payment
         document.save()
 
         document = Document.objects.get(id=document.id)

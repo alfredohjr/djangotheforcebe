@@ -3,13 +3,14 @@ from django.db import models
 from django.utils import timezone
 from django.dispatch import receiver
 from django.db.models.signals import pre_save, post_save
+
 from shop.models.Document import Document
 from shop.models.DocumentFolder import DocumentFolder
 from shop.models.DocumentProduct import DocumentProduct
 from shop.models.Entity import Entity
-
 from shop.models.InventoryLog import InventoryLog
 from shop.models.InventoryProduct import InventoryProduct
+from backoffice.models.PaymentMethod import PaymentMethod
 
 
 class Inventory(models.Model):
@@ -83,6 +84,17 @@ class Inventory(models.Model):
                         amount = p.valueBefore - p.value
                         obj2upd['OUT'].append({'product':p.product.id, 'amount': amount})
 
+                payment = PaymentMethod.objects.filter(name__contains='[INV]', deletedAt=None).first()
+                if not payment:
+                    payment = PaymentMethod()
+                    payment.name = '[INV]'
+                    payment.inCash = True
+                    payment.portionAmount = 0
+                    payment.dueDate = 0
+                    payment.percentagePerDelay = 0
+                    payment.percentageDiscount = 0
+                    payment.save()
+
                 if obj2upd['IN']:
                     folder = DocumentFolder.objects.filter(name__contains='INVENTARIO ENTRADA',documentType='IN')
                     if not folder:
@@ -96,6 +108,7 @@ class Inventory(models.Model):
                     document.deposit = self.deposit
                     document.entity = entity[0]
                     document.folder = folder[0]
+                    document.paymentMethod = payment
                     document.save()
 
                     for p in obj2upd['IN']:
@@ -122,6 +135,7 @@ class Inventory(models.Model):
                     document.deposit = self.deposit
                     document.entity = entity[0]
                     document.folder = folder[0]
+                    document.paymentMethod = payment
                     document.save()
 
                     for p in obj2upd['OUT']:

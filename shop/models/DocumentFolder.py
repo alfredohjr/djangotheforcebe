@@ -25,6 +25,9 @@ class DocumentFolder(models.Model):
     updatedAt = models.DateTimeField(auto_now=True)
     deletedAt = models.DateTimeField(blank=True, null=True)
 
+    def __str__(self):
+        return self.name
+
     def save(self, *args, **kwargs):
 
         created = False
