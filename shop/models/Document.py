@@ -126,19 +126,29 @@ def save_document(sender, instance, **kwargs):
 
                 dueDate = instance.paymentMethod.dueDate
                 if instance.paymentMethod.isPortion:
-                    portionAmount = instance.paymentMethod.portionAmount
+                    portionAmount = 0
+                    if instance.paymentMethod.portionAmount > 0:
+                        portionAmount = instance.paymentMethod.portionAmount
+                        portionAmount = [x+30 for x in range(1,portionAmount+1)]
+                    elif instance.paymentMethod.portionRegex != 'NA':
+                        portionAmount = instance.paymentMethod.portionRegex
+                        portionAmount = portionAmount.split('/')
+                        portionAmount = [int(x) for x in portionAmount]
 
-                    for pa in range(1,portionAmount+1):
+                    count = 1
+                    for pa in portionAmount:
 
                         payReceive = PayReceive()
                         payReceive.document = instance
                         payReceive.paymentMethod = instance.paymentMethod
-                        payReceive.portionNumber = pa
-                        payReceive.value = instance.total() / portionAmount
+                        payReceive.portionNumber = count
+                        payReceive.value = instance.total() / len(portionAmount)
                         payReceive.valueExtra = 0
                         payReceive.valueDiscount = 0
-                        payReceive.paymentDateFixed = timezone.now() + timezone.timedelta(days=30*pa)
+                        payReceive.paymentDateFixed = timezone.now() + timezone.timedelta(days=pa)
                         payReceive.save()
+
+                        count += 1
 
 
         if queryset[0].isOpen == instance.isOpen:

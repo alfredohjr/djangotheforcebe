@@ -11,6 +11,8 @@ from shop.models.Stock import Stock
 from shop.models.Inventory import Inventory
 from shop.models.CompanyLog import CompanyLog
 
+from backoffice.models.PayReceive import PayReceive
+
 class Company(models.Model):
 
     name = models.CharField(max_length=30)
@@ -47,6 +49,11 @@ class Company(models.Model):
         inventory = Inventory.objects.filter(isOpen=True, deposit__in=deposits)
         if inventory:
             raise ValidationError('don\'t delete with inventory is open')
+
+        document = Document.objects.filter(deposit__in=deposits)
+        payReceive = PayReceive.objects.filter(document__in=document, paymentDateAccomplished=None)
+        if payReceive:
+            raise ValidationError('don\'t delete company with financial open')
 
         self.deletedAt = timezone.now()
         self.save() 

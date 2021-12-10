@@ -7,6 +7,7 @@ class PaymentMethod(models.Model):
     inCash = models.BooleanField(default=False)
     isPortion = models.BooleanField(default=False)
     portionAmount = models.IntegerField()
+    portionRegex = models.TextField(default='NA')
     dueDate = models.IntegerField()
     percentagePerDelay = models.DecimalField(max_digits=6, decimal_places=3)
     percentageDiscount = models.DecimalField(max_digits=6, decimal_places=3)

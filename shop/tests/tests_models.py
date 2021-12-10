@@ -4,8 +4,9 @@ import datetime
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone as djangoTimezone
-from backoffice.models.PaymentMethod import PaymentMethod
 
+from backoffice.models.PayReceive import PayReceive
+from backoffice.models.PaymentMethod import PaymentMethod
 from shop.core.validators.cnpj import ValidateCNPJ
 from shop.core.validators.cpf import ValidateCPF
 from shop.models.Company import Company
@@ -14,7 +15,7 @@ from shop.models.Deposit import Deposit
 from shop.models.DepositLog import DepositLog
 from shop.models.DocumentFolder import DocumentFolder
 from shop.models.Document import Document
-from shop.models.DocumentLog import DocumentLog
+from shop.models.DocumentLog import DocumentLog, pre_save_documentLog
 from shop.models.DocumentProduct import DocumentProduct
 from shop.models.Entity import Entity
 from shop.models.EntityLog import EntityLog
@@ -94,7 +95,7 @@ class AutoCreate:
             product = Product.objects.create(name=name)
             return product
 
-    def createDocumentFolder(self,name=None,documentType='IN',financial=False):
+    def createDocumentFolder(self,name=None,documentType='IN',financial=False, stock=True):
         if name is None:
             name = self.name
         
@@ -105,7 +106,7 @@ class AutoCreate:
         folder = DocumentFolder()
         folder.name = name
         folder.documentType = documentType
-        folder.stock = True
+        folder.stock = stock
         folder.product = True
         folder.financial = financial
         folder.updateCost = False if documentType == 'OUT' else True
@@ -114,12 +115,15 @@ class AutoCreate:
 
         return folder
 
-    def createPaymentMethod(self,name=None):
+    def createPaymentMethod(self,name=None,isPortion=True,portionAmount=7,dueDate=6,portionRegex='15/30/45/60'):
         if name is None:
             name = self.name
 
         boAuto = BackOfficeAutoCreate(name=name)
-        return boAuto.createPaymentMethod()
+        return boAuto.createPaymentMethod(isPortion=isPortion
+                                    ,portionAmount=portionAmount
+                                    ,dueDate=dueDate
+                                    ,portionRegex=portionRegex)
 
 
     def createDocument(self,name=None,documentType='IN',key=None):
@@ -298,7 +302,14 @@ class TestCase_001_ModelCompany(TestCase):
         self.assertIsNone(company.deletedAt)
        
     def test_008_delete_company_with_deposit_is_finance_open(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000008')
+        company = auto.createCompany()
+        auto.createPaymentMethod(portionAmount=0)
+        document = auto.createDocumentFolder(financial=True,stock=False)
+        auto.fullDocumentOperation()
+
+        self.assertRaises(ValidationError, company.delete)
+
     
     def test_009_delete_company_with_deposit_inventory_is_open(self):
         auto = AutoCreate('test_000009')

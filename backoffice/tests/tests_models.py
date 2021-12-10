@@ -1,6 +1,7 @@
 from django.test import TestCase
 
 from backoffice.models.PaymentMethod import PaymentMethod
+from backoffice.models.PayReceive import PayReceive
 # Create your tests here.
 
 class AutoCreate:
@@ -8,7 +9,7 @@ class AutoCreate:
     def __init__(self, name):
         self.name = name
 
-    def createPaymentMethod(self, name=None):
+    def createPaymentMethod(self, name=None,isPortion=True,portionAmount=7,dueDate=6,portionRegex='15/30/45/60'):
         if name is None:
             name = self.name
         
@@ -18,15 +19,23 @@ class AutoCreate:
         
         paymentMethod = PaymentMethod()
         paymentMethod.name = name
-        paymentMethod.isPortion = True
-        paymentMethod.portionAmount = 5
-        paymentMethod.dueDate = 6
+        paymentMethod.isPortion = isPortion
+        paymentMethod.portionAmount = portionAmount
+        paymentMethod.dueDate = dueDate
+        paymentMethod.portionRegex = portionRegex
         paymentMethod.percentagePerDelay = 3
         paymentMethod.percentageDiscount = 8
         paymentMethod.save()
 
         return paymentMethod
+
+    def createPayReceive(self, document, name=None):
+        if name is None:
+            name = self.name
         
+        payReceive = PayReceive.objects.filter(name=name)
+        if payReceive:
+            return payReceive[0]
 
 
 class TestCase_001_ModelPaymentMethod(TestCase):
