@@ -9,6 +9,8 @@ from shop.models.EntityLog import EntityLog
 from shop.core.validators.cnpj import ValidateCNPJ
 from shop.core.validators.cpf import ValidateCPF
 
+from backoffice.models.PayReceive import PayReceive
+
 
 class Entity(models.Model):
 
@@ -51,6 +53,11 @@ class Entity(models.Model):
         document = Document.objects.filter(isOpen=True,entity__id=self.id)
         if document:
             raise ValidationError('document is open, verify.')
+
+        document = Document.objects.filter(entity__id=self.id)
+        payReceive = PayReceive.objects.filter(document__in=document, paymentDateAccomplished=None)
+        if payReceive:
+            raise ValidationError('payReceive is open, verify.')
 
         self.deletedAt = timezone.now()
         self.save()

@@ -14,6 +14,7 @@ from shop.models.CompanyLog import CompanyLog
 from shop.models.Deposit import Deposit
 from shop.models.DepositLog import DepositLog
 from shop.models.DocumentFolder import DocumentFolder
+from shop.models.DocumentFolderLog import DocumentFolderLog
 from shop.models.Document import Document
 from shop.models.DocumentLog import DocumentLog, pre_save_documentLog
 from shop.models.DocumentProduct import DocumentProduct
@@ -476,7 +477,13 @@ class TestCase_002_ModelDeposit(TestCase):
         self.assertIsNone(deposit.deletedAt)
 
     def test_006_delete_deposit_with_is_finance_open(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000006')
+        auto.createDocumentFolder(stock=False, financial=True)
+        auto.fullDocumentOperation()
+
+        deposit = Deposit.objects.get(name='test_000006')
+        self.assertRaises(ValidationError,deposit.delete)
+
     
     def test_007_delete_deposit_with_inventory_is_open(self):
         auto = AutoCreate('test_000004')
@@ -635,7 +642,13 @@ class TestCase_003_ModelEntity(TestCase):
         self.assertRaises(ValidationError,entity.delete)
 
     def test_004_delete_entity_with_is_finance_open(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000004')
+        entity = auto.createEntity()
+        folder = auto.createDocumentFolder(stock=False, financial=True)
+        auto.fullDocumentOperation()
+
+        entity = Entity.objects.get(id=entity.id)
+        self.assertRaises(ValidationError,entity.delete)
     
     def test_005_entity_register_in_log_table(self):
         auto = AutoCreate('test_000005')
@@ -2427,8 +2440,16 @@ class TestCase_018_ModelDocumentFolder(TestCase):
         folder.documentType = 'IN'
         self.assertRaises(ValidationError,folder.save)
 
-    def test_012_write_documentLog(self):
-        self.skipTest('empty')
+    def test_012_write_documentFolderLog(self):
+        auto = AutoCreate('test_000012')
+        deposit = auto.createDeposit()
+        entity = auto.createEntity(entityType='CLI')
+
+        folder = auto.createDocumentFolder()
+
+        log = DocumentFolderLog.objects.filter(documentFolder=folder)
+        self.assertEqual(log.count(), 1)
+        
 
 
 class TestCase_010_ModelCompanyLog(TestCase):
@@ -2495,7 +2516,13 @@ class TestCase_015_ModelInventoryLog(TestCase):
 class TestCase_015_ModelDocumentFolderLog(TestCase):
 
     def test_001_dont_update_log_register(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000001')
+        folder = auto.createDocumentFolder()
+
+        log = DocumentFolderLog.objects.get(documentFolder=folder)
+        log.message = 'update log'
+        self.assertRaises(ValidationError, log.save)
+
 
 
 class TestCase_001_ValidatorsCPF(TestCase):

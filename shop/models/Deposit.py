@@ -3,10 +3,12 @@ from django.db import models
 from django.utils import timezone
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
-from shop.models.Inventory import Inventory
 
+from shop.models.Inventory import Inventory
 from shop.models.Stock import Stock
 from shop.models.DepositLog import DepositLog
+from shop.models.Document import Document
+from backoffice.models.PayReceive import PayReceive
 
 class Deposit(models.Model):
 
@@ -61,6 +63,15 @@ class Deposit(models.Model):
         inventory = Inventory.objects.filter(deposit__id=self.id, isOpen=True)
         if inventory:
             raise ValidationError('don\'t delete deposit with inventory open')
+
+        document = Document.objects.filter(deposit__id=self.id, isOpen=True)
+        if document:
+            raise ValidationError('don\'t delete deposit with document open')
+
+        document = Document.objects.filter(deposit__id=self.id)
+        payReceive = PayReceive.objects.filter(document__in=document, paymentDateAccomplished=None)
+        if payReceive:
+            raise ValidationError('don\'t delete deposit with open financial document')
 
         self.deletedAt = timezone.now()
         self.save()
