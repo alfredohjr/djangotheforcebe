@@ -70,9 +70,6 @@ def save_document(sender, instance, **kwargs):
     if instance.entity.deletedAt:
         raise ValidationError('entity is closed, verify.')
     
-    if instance.folder.order and instance.folder.documentType == 'OUT':
-        instance.sendMail = True
-
     if instance.isOpen == False:
         documentProduct = DocumentProduct.objects.filter(document=instance.id,deletedAt=None)
         if not documentProduct and instance.folder.product:
@@ -169,6 +166,8 @@ def save_document(sender, instance, **kwargs):
             raise ValidationError('don\'t create document deleted.')
         if instance.entity.entityType == 'FOR' and instance.folder.documentType == 'OUT':
             raise ValidationError('don\'t create document OUT with entity FOR')
+        if instance.folder.order and instance.folder.documentType == 'OUT':
+            instance.sendMail = True
 
     # for log
     if queryset:
