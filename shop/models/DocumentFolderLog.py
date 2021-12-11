@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
@@ -17,6 +18,11 @@ class DocumentFolderLog(models.Model):
     createdAt = models.DateTimeField(auto_now_add=True)
     updatedAt = models.DateTimeField(auto_now=True)
     deletedAt = models.DateTimeField(blank=True, null=True)
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            raise ValidationError('This object is not editable')
+        super().save(*args, **kwargs)
 
     def delete(self):
         self.deletedAt = timezone.now()

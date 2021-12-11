@@ -3,11 +3,12 @@ from django.db import models
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.utils import timezone
-from backoffice.models.PaymentMethod import PaymentMethod
-from backoffice.models.PayReceive import PayReceive
+import traceback
 
 from shop.models.DocumentProduct import DocumentProduct
 from shop.models.DocumentLog import DocumentLog
+from backoffice.models.PayReceive import PayReceive
+from backoffice.models.PaymentMethod import PaymentMethod
 
 class Document(models.Model):
 
@@ -60,6 +61,15 @@ class Document(models.Model):
         self.isOpen = False
         self.save()
 
+    def reOpenDocument(self,reason):
+        if len(reason.strip()) < 20:
+            raise ValidationError('reOpen reason must be at least 20 characters')
+
+        log = DocumentLog()
+        log.register(id=self.id, table='document', transaction='upd', message=reason)
+
+        self.isOpen = True
+        self.save()
 
 @receiver(pre_save, sender=Document)
 def save_document(sender, instance, **kwargs):
@@ -93,6 +103,11 @@ def save_document(sender, instance, **kwargs):
                 raise ValidationError('document is closed, don\'t alter this.')
 
         if not queryset[0].isOpen and instance.isOpen:
+
+            stack = [x.name for x in traceback.extract_stack()]
+            if not 'reOpenDocument' in stack:
+                raise ValidationError('please, use reOpenDocument method.')
+
             instance.key = queryset[0].key
             instance.deposit = queryset[0].deposit
             instance.entity = queryset[0].entity

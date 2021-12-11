@@ -1089,7 +1089,7 @@ class TestCase_005_ModelDocument(TestCase):
         self.assertFalse(documentProduct.isOpen)
 
         document = Document.objects.get(id=documentProduct.document.id)
-        document.isOpen = True
+        document.reOpenDocument(reason='test_000012_000000000000000')
         document.save()
 
         documentProduct = DocumentProduct.objects.get(id=documentProduct.id)
@@ -1122,7 +1122,7 @@ class TestCase_005_ModelDocument(TestCase):
             self.assertEqual(stock.amount,1)
         
         document = Document.objects.get(id=document.id)
-        document.isOpen = True
+        document.reOpenDocument(reason='test_000014_000000000000')
         document.save()
 
         for docprod in documentProduct:
@@ -1132,7 +1132,11 @@ class TestCase_005_ModelDocument(TestCase):
             self.assertEqual(stock.amount,0)
 
     def test_015_Reopen_document_reason_as_20_or_more_chars(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000015')
+        document = auto.fullDocumentOperation()
+
+        document = Document.objects.get(id=document.id)
+        self.assertRaises(ValidationError,document.reOpenDocument,reason='test_000015')
 
     def test_016_update_fields_after_deleted(self):
         auto = AutoCreate('test_000016')
@@ -1193,7 +1197,33 @@ class TestCase_005_ModelDocument(TestCase):
         self.assertRaises(ValidationError,documentProduct.save)
         
     def test_021_update_document_if_isOpen_False(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000021')
+
+        document = auto.fullDocumentOperation()
+        
+        document = Document.objects.get(id=document.id)
+        document.key = 'test_000021_001'
+        self.assertRaises(ValidationError,document.save)
+
+        document = Document.objects.get(id=document.id)
+        document.deposit = auto.createDeposit(name='test_000021_001')
+        self.assertRaises(ValidationError,document.save)
+
+        document = Document.objects.get(id=document.id)
+        document.entity = auto.createEntity(name='test_000021_001')
+        self.assertRaises(ValidationError,document.save)
+
+        document = Document.objects.get(id=document.id)
+        document.folder = auto.createDocumentFolder(name='test_000021_001')
+        self.assertRaises(ValidationError,document.save)
+
+        document = Document.objects.get(id=document.id)
+        document.paymentMethod = auto.createPaymentMethod(name='test_000021_001')
+        self.assertRaises(ValidationError,document.save)
+
+        document = Document.objects.get(id=document.id)
+        document.deliveryValue = 1800
+        self.assertRaises(ValidationError,document.save)
 
     def test_022_dont_change_isOpen_if_inventory_open(self):
         auto = AutoCreate('test_000022')
@@ -2442,9 +2472,6 @@ class TestCase_018_ModelDocumentFolder(TestCase):
 
     def test_012_write_documentFolderLog(self):
         auto = AutoCreate('test_000012')
-        deposit = auto.createDeposit()
-        entity = auto.createEntity(entityType='CLI')
-
         folder = auto.createDocumentFolder()
 
         log = DocumentFolderLog.objects.filter(documentFolder=folder)
@@ -2510,8 +2537,19 @@ class TestCase_014_ModelProductLog(TestCase):
 class TestCase_015_ModelInventoryLog(TestCase):
 
     def test_001_dont_update_log_register(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000001')
+        inventory = auto.createInventory()
 
+        log = InventoryLog()
+        log.inventory = inventory
+        log.table = 'TEST'
+        log.transaction = 'CRE'
+        log.message = 'create log'
+        log.save()
+
+        log = InventoryLog.objects.get(id=log.id)
+        log.message = 'update log'
+        self.assertRaises(ValidationError, log.save)
 
 class TestCase_015_ModelDocumentFolderLog(TestCase):
 
@@ -2520,9 +2558,11 @@ class TestCase_015_ModelDocumentFolderLog(TestCase):
         folder = auto.createDocumentFolder()
 
         log = DocumentFolderLog.objects.get(documentFolder=folder)
-        log.message = 'update log'
+        log.documentFolder = folder
+        log.table = 'TEST'
+        log.transaction = 'CRE'
+        log.message = 'create log'
         self.assertRaises(ValidationError, log.save)
-
 
 
 class TestCase_001_ValidatorsCPF(TestCase):

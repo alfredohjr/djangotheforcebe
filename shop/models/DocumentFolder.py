@@ -3,7 +3,7 @@ from django.db import models
 from django.utils import timezone
 
 from shop.models.Document import Document
-from shop.models.DocumentLog import DocumentLog
+from shop.models.DocumentFolderLog import DocumentFolderLog
 
 class DocumentFolder(models.Model):
 
@@ -54,7 +54,7 @@ class DocumentFolder(models.Model):
 
         #for logs
         if created:
-            pass
+            DocumentFolderLog.objects.create(documentFolder=self, transaction='cre')
         else:
             messages = []
             if obj.name != self.name:
