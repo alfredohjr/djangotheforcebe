@@ -17,3 +17,5 @@ class test_001_bugs(TestCase):
 
         document = Document.objects.get(id=document.id)
 
+    def test_002_dont_create_price_with_startedAt_None(self):
+        self.skipTest('empty')

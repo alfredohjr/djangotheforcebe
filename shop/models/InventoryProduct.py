@@ -1,6 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
+import traceback
 
 from shop.models.Stock import Stock
 from shop.models.InventoryLog import InventoryLog
@@ -46,6 +47,13 @@ class InventoryProduct(models.Model):
             if obj.isOpen and self.valueBefore != obj.valueBefore and obj.startedAt:
                 raise ValidationError('don\'t alter valueBefore after started inventory')
                 
+            if self.inventory.isOpen:
+                if obj.isOpen and self.isOpen is False:
+                    raise ValidationError('don\'t change flag in inventoryProduct')
+
+            if obj.startedAt and obj.startedAt != self.startedAt:
+                raise ValidationError('don\'t change startedAt in inventoryProduct')
+        
         else:
             created = True
 

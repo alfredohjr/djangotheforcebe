@@ -149,10 +149,11 @@ class Inventory(models.Model):
                     document.isOpen = False
                     document.save()
                 
+                self.isOpen = False
+                super().save(*args, **kwargs)
                 for ip in inventoryProduct:
                     ip.isOpen = False
                     ip.save()
-                self.isOpen = False
         else:
             created = True
             if self.startedAt:

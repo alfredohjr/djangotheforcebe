@@ -179,23 +179,30 @@ class AutoCreate:
         document.save()
         return document
 
-    def createPrice(self, name=None):
+    def createPrice(self, name=None, value=1, priceType='NO', startedAt=None, finishedAt=None):
         if name is None:
             name = self.name
 
         deposit = self.createDeposit()
         product = self.createProduct()
 
-        price = Price.objects.filter(deposit=deposit, product=product)
+        price = Price.objects.filter(
+            deposit=deposit
+            , product=product
+            , priceType=priceType
+            , startedAt=startedAt
+            , finishedAt=finishedAt)
+
         if price:
             return price[0]
         else:
             price = Price()
             price.deposit = deposit
             price.product = product
-            price.value = 10
-            price.priceType = 'NO'
-            price.startedAt = djangoTimezone.now()
+            price.value = value
+            price.priceType = priceType
+            price.startedAt = djangoTimezone.now() if startedAt == None else startedAt
+            price.finishedAt = finishedAt
             price.save()
             return price
     
@@ -1508,7 +1515,21 @@ class TestCase_006_ModelDocumentProduct(TestCase):
         self.assertIsNone(documentProduct.deletedAt)
 
     def test_018_dont_change_isOpen_if_inventory_open(self):
-        self.skipTest('empty')
+        """
+        create fullDocument
+        create inventory
+        create inventoryProduct
+        update inventory isOpen to True
+        call document.reOpenDocument with reason test_0000000000000000000 and check if assertRaises
+        """
+        auto = AutoCreate('test_000018')
+        document = auto.fullDocumentOperation()
+        inventory = auto.createInventory()
+        auto.createInventoryProduct()
+        inventory.isOpen = True
+        inventory.save()
+
+        self.assertRaises(ValidationError,document.reOpenDocument,reason='test_0000000000000000000')
 
 
 class TestCase_007_ModelPrice(TestCase):
@@ -1672,9 +1693,6 @@ class TestCase_007_ModelPrice(TestCase):
         self.assertEqual(log[3].table,'PRICE')
         self.assertEqual(log[3].transaction,'DEL')
     
-    def test_013_hierarchy_of_prices(self):
-        self.skipTest('empty')
-
     def test_014_create_with_deletedAt_not_none(self):
         auto = AutoCreate('test_000014')
         deposit = auto.createDeposit()
@@ -1737,8 +1755,19 @@ class TestCase_007_ModelPrice(TestCase):
         self.assertIsNone(price.deletedAt)
 
     def test_018_dont_alter_if_isActive_true(self):
-        self.skipTest('empty')
+        """
+        if price is active, dont alter the value
+        """
 
+        auto = AutoCreate('test_000018')
+        price = auto.createPrice()
+        price.isValid = True
+        price.value = 100
+        price.save()
+
+        price = Price.objects.get(id=price.id)
+        price.value = 200
+        self.assertRaises(ValidationError, price.save)
 
 class TestCase_008_ModelStock(TestCase):
 
@@ -1787,11 +1816,75 @@ class TestCase_008_ModelStock(TestCase):
         self.assertEqual(stock.value,0)
 
     def test_005_inventory_IN(self):
-        self.skipTest('empty')
+        """
+        create fullDocument
+        create inventory
+        create inventoryProduct with 100 in amount
+        isOpen is False in inventory
+        check if stock amount is 100 if not, raise ValidationError
+        """
+        auto = AutoCreate('test_000005')
+        auto.fullDocumentOperation()
+        product = auto.createProduct()
+        deposit = auto.createDeposit()
+
+        stock = Stock.objects.get(deposit=deposit, product=product)
+        self.assertEqual(stock.amount,1)
+
+        inventory = auto.createInventory()
+
+        inventoryProduct = InventoryProduct()
+        inventoryProduct.inventory = inventory
+        inventoryProduct.product = product
+        inventoryProduct.value = 100
+        inventoryProduct.save()
+
+        inventory = Inventory.objects.get(id=inventory.id)
+        inventory.startedAt = djangoTimezone.now()
+        inventory.save()
+
+        inventory = Inventory.objects.get(id=inventory.id)
+        inventory.isOpen = False
+        inventory.save()
+
+        stock = Stock.objects.get(deposit=deposit, product=product)
+        self.assertEqual(stock.amount,100)
 
     def test_006_inventory_OUT(self):
-        self.skipTest('empty')
+        """
+        create fullDocument with amount 100
+        create inventory
+        create inventoryProduct with 10 in value
+        isOpen is False in inventory
+        check if stock amount is 10 if not, raise ValidationError
+        """
+        auto = AutoCreate('test_000006')
+        auto.fullDocumentOperation(amount=100)
+        product = auto.createProduct()
+        deposit = auto.createDeposit()
 
+        stock = Stock.objects.get(deposit=deposit, product=product)
+        self.assertEqual(stock.amount,100)
+
+        inventory = auto.createInventory()
+
+        inventoryProduct = InventoryProduct()
+        inventoryProduct.inventory = inventory
+        inventoryProduct.product = product
+        inventoryProduct.value = 10
+        inventoryProduct.save()
+
+        inventory = Inventory.objects.get(id=inventory.id)
+        inventory.startedAt = djangoTimezone.now()
+        inventory.save()
+
+        inventory = Inventory.objects.get(id=inventory.id)
+        inventory.isOpen = False
+        inventory.save()
+
+        stock = Stock.objects.get(deposit=deposit, product=product)
+        self.assertEqual(stock.amount,10)
+        
     def test_007_create_stock_with_company_close(self):
         auto = AutoCreate('test_000007')
         document = auto.createDocumentProduct()
@@ -2152,8 +2245,18 @@ class TestCase_016_ModelInventory(TestCase):
         self.assertRaises(ValidationError, inventory.save)
     
     def test_017_dont_create_and_start_same_time(self):
-        self.skipTest('empty')
-
+        """
+        create inventory and start it at the same time
+        """
+        
+        auto = AutoCreate('test_000017')
+        inventory = Inventory()
+        inventory.name = 'test_000017'
+        inventory.deposit = auto.createDeposit()
+        inventory.isOpen = True
+        inventory.startedAt = djangoTimezone.now()
+        self.assertRaises(ValidationError, inventory.save)
+        
 
 class TestCase_017_ModelInventoryProduct(TestCase):
 
@@ -2319,10 +2422,45 @@ class TestCase_017_ModelInventoryProduct(TestCase):
         self.assertRaises(ValidationError, inventoryProduct.save)
 
     def test_017_dont_alter_isOpen_different_inventory(self):
-        self.skipTest('empty')
+        """
+        create inventory
+        create inventoryProduct
+        isOpen is True in inventory
+        change inventoryProduct isOpen to False, and test raise
+        """
+        auto = AutoCreate('test_000017')
+        deposit = auto.createDeposit()
+        product = auto.createProduct()
+       
+        inventory = auto.createInventory()
+        inventoryProduct = auto.createInventoryProduct()
+        inventory.isOpen = True
+        inventory.save()
 
+        inventory.startedAt = djangoTimezone.now()
+        inventory.save()
+
+        inventoryProduct.isOpen = False
+        self.assertRaises(ValidationError, inventoryProduct.save)
+        
     def test_018_dont_update_after_startedAt(self):
-        self.skipTest('empty')
+        """
+        create inventory
+        create inventory product
+        start inventory
+        update inventory product startedAt and test raise
+        """
+        auto = AutoCreate('test_000018')
+        deposit = auto.createDeposit()
+        product = auto.createProduct()
+       
+        inventory = auto.createInventory()
+        inventoryProduct = auto.createInventoryProduct()
+        inventory.startedAt = djangoTimezone.now()
+        inventory.save()
+
+        inventoryProduct.startedAt = djangoTimezone.now()
+        self.assertRaises(ValidationError, inventoryProduct.save)
 
 
 class TestCase_018_ModelDocumentFolder(TestCase):
@@ -2432,7 +2570,22 @@ class TestCase_018_ModelDocumentFolder(TestCase):
         document.close()
 
     def test_007_financial_send(self):
-        self.skipTest('empty')
+        """
+        create documentfolder with financial is True
+        create fulldocument
+        test if document exists in PayReceive table
+        """
+        auto = AutoCreate('test_000007')
+        auto.createDeposit()
+        auto.createEntity()
+        auto.createProduct()
+
+        auto.createDocumentFolder(financial=True, stock=True)
+        auto.createPaymentMethod()
+
+        document = auto.fullDocumentOperation()
+
+        self.assertTrue(PayReceive.objects.filter(document=document).exists())
 
     def test_008_order_out_default_send_email_true(self):
         auto = AutoCreate('test_000008')
@@ -2460,9 +2613,33 @@ class TestCase_018_ModelDocumentFolder(TestCase):
         self.assertTrue(document.sendMail)
 
     def test_009_updateCost_if_product_is_true(self):
-        self.skipTest('empty')
+        """
+        create documentFolder with product is True
+        call fullDocumentOperation
+        test if product cost is changed
+        """
+        auto = AutoCreate('test_000009')
+        deposit = auto.createDeposit()
+        entity = auto.createEntity()
+        product = auto.createProduct()
+
+        folder = DocumentFolder()
+        folder.name = 'test_000009'
+        folder.product = True
+        folder.stock = True
+        folder.documentType = 'IN'
+        folder.save()
+
+        auto.createPaymentMethod()
+
+        auto.fullDocumentOperation()
+        auto.createDocumentProduct()
+
+        stock = Stock.objects.get(product=product, deposit=deposit)
+        self.assertEqual(stock.value, 1)
 
     def test_010_createPrice_if_product_is_true(self):
+
         folder = DocumentFolder()
         folder.name = 'test_000010'
         folder.product = False

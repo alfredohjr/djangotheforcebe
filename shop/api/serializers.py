@@ -82,10 +82,18 @@ class forShopProductSerializer(serializers.ModelSerializer):
         exclude = ['deletedAt','margin','createdAt','updatedAt']
 
 
+class forShopDepositSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Deposit
+        exclude = ['deletedAt','createdAt','updatedAt']
+
+
 class ShopProductSerializer(serializers.ModelSerializer):
 
     amount = serializers.IntegerField()
     product = forShopProductSerializer()
+    deposit = forShopDepositSerializer()
     price1 = serializers.SerializerMethodField()
     price2 = serializers.SerializerMethodField()
 
@@ -113,4 +121,4 @@ class ShopProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model=Stock
-        exclude=['deletedAt','createdAt','updatedAt','value','deposit']
+        exclude=['deletedAt','createdAt','updatedAt','value']
