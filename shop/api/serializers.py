@@ -35,6 +35,8 @@ class ProductSerializer(serializers.ModelSerializer):
 
 class PriceSerializer(serializers.ModelSerializer):
 
+    value = serializers.FloatField()
+
     class Meta:
         model=Price
         exclude=['deletedAt']
@@ -69,6 +71,8 @@ class DocumentSerializer(serializers.ModelSerializer):
 
 
 class DocumentProductSerializer(serializers.ModelSerializer):
+
+    amount = serializers.FloatField()
 
     class Meta:
         model=DocumentProduct

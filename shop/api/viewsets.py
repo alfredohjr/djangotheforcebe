@@ -1,3 +1,4 @@
+from django.test.testcases import _AssertTemplateUsedContext
 from rest_framework import viewsets
 from rest_framework import permissions
 from rest_framework.permissions import DjangoModelPermissions
@@ -110,11 +111,22 @@ class DocumentProductViewSets(viewsets.ModelViewSet):
         return queryset
 
 
-class ShopProductViewSet(viewsets.ModelViewSet):
+class ShopProductViewSet(viewsets.ReadOnlyModelViewSet):
 
     serializer_class = ShopProductSerializer
     permission_class = [DjangoModelPermissions]
 
     def get_queryset(self):
-        queryset = Stock.objects.filter(deletedAt=None)
+        
+        queryset = Stock.objects.filter(deletedAt=None).exclude(amount=0)
+        for q in queryset:
+            price = Price.objects.filter(
+                product=q.product
+                , deposit=q.deposit
+                , startedAt__lte=timezone.now()
+                , isValid=True
+                , priceType='NO').first()
+            if not price:
+                queryset = queryset.exclude(id=q.id)
+
         return queryset

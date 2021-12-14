@@ -227,7 +227,7 @@ class AutoCreate:
 
         return inventory
     
-    def createInventoryProduct(self,name=None):
+    def createInventoryProduct(self,name=None, value=1):
         if name == None:
             name = self.name
         
@@ -237,7 +237,7 @@ class AutoCreate:
         inventoryProduct = InventoryProduct()
         inventoryProduct.inventory = inventory
         inventoryProduct.product = product
-        inventoryProduct.value = 1
+        inventoryProduct.value = value
         inventoryProduct.isOpen = True
         inventoryProduct.save()
 

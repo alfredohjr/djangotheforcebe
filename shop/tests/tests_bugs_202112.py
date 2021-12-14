@@ -1,5 +1,11 @@
+from django.core.exceptions import ValidationError
 from django.test import TestCase
+from shop.models.Deposit import Deposit
+
 from shop.models.Document import Document
+from shop.models.Price import Price
+from shop.models.Product import Product
+
 from shop.tests.tests_models import AutoCreate
 
 class test_001_bugs(TestCase):
@@ -18,4 +24,13 @@ class test_001_bugs(TestCase):
         document = Document.objects.get(id=document.id)
 
     def test_002_dont_create_price_with_startedAt_None(self):
-        self.skipTest('empty')
+        auto = AutoCreate('test_000002')
+        deposit = auto.createDeposit()
+        product = auto.createProduct()
+
+        price = Price()
+        price.deposit = deposit
+        price.product = product
+        price.value = 100
+        price.startedAt = None
+        self.assertRaises(ValidationError, price.save)

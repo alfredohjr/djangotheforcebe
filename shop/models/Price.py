@@ -82,6 +82,9 @@ def pre_save_price(sender, instance, *args, **kwargs):
     if instance.priceType == 'OF' and instance.finishedAt is None:
         raise ValidationError('don\'t create oferta price without finishedAt')
     
+    if not instance.startedAt:
+        raise ValidationError('don\'t create price without startedAt')
+    
     trunc = timezone.now()
     trunc = timezone.datetime(trunc.year,trunc.month,trunc.day)
     trunc = timezone.make_aware(trunc, timezone.get_current_timezone())
