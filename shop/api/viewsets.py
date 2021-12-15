@@ -1,11 +1,28 @@
+from django.http.response import HttpResponse
 from django.test.testcases import _AssertTemplateUsedContext
 from rest_framework import viewsets
 from rest_framework import permissions
 from rest_framework.permissions import DjangoModelPermissions
 from django.utils import timezone
 from rest_framework.views import APIView
+from rest_framework.generics import ListAPIView, UpdateAPIView
+import json
 
-from shop.api.serializers import CompanySerializer, DepositSerializer, DocumentProductSerializer, DocumentSerializer, EntitySerializer, PriceSerializer, ProductSerializer, ShopProductSerializer, StockMovementSerializer, StockSerializer
+from shop.api.serializers import (
+    CompanySerializer
+    , DepositSerializer
+    , DocumentProductSerializer
+    , DocumentSerializer
+    , EntitySerializer
+    , PriceSerializer
+    , ProductSerializer
+    , ShopProductSerializer
+    , StockMovementSerializer
+    , StockSerializer
+    , CompanyImageSerializer
+    , DepositImageSerializer
+    , EntityImageSerializer
+    , ProductImageSerializer)
 
 from shop.models.Company import Company
 from shop.models.Deposit import Deposit
@@ -31,6 +48,20 @@ class CompanyViewSets(viewsets.ModelViewSet):
         return queryset
 
 
+class CompanyImageViewSet(UpdateAPIView):
+    
+    queryset = Company.objects.filter(deletedAt=None)
+    serializer_class = CompanyImageSerializer
+    lookup_field = 'pk'
+
+    def update(self, request, *args, **kwargs):
+        file = request.data['file']
+        company = Company.objects.get(pk=kwargs['pk'])
+        company.logo = file
+        company.save()
+        return HttpResponse(json.dumps({'message': "Uploaded"}), status=200)
+
+
 class DepositViewSets(viewsets.ModelViewSet):
 
     serializer_class = DepositSerializer
@@ -39,6 +70,20 @@ class DepositViewSets(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = Deposit.objects.filter(deletedAt=None)
         return queryset
+
+
+class DepositImageViewSet(UpdateAPIView):
+    
+    queryset = Deposit.objects.filter(deletedAt=None)
+    serializer_class = DepositImageSerializer
+    lookup_field = 'pk'
+
+    def update(self, request, *args, **kwargs):
+        file = request.data['file']
+        company = Deposit.objects.get(pk=kwargs['pk'])
+        company.logo = file
+        company.save()
+        return HttpResponse(json.dumps({'message': "Uploaded"}), status=200)
 
 
 class ProductViewSets(viewsets.ModelViewSet):
@@ -51,6 +96,20 @@ class ProductViewSets(viewsets.ModelViewSet):
         return queryset
 
 
+class ProductImageViewSet(UpdateAPIView):
+    
+    queryset = Product.objects.filter(deletedAt=None)
+    serializer_class = ProductImageSerializer
+    lookup_field = 'pk'
+
+    def update(self, request, *args, **kwargs):
+        file = request.data['file']
+        company = Product.objects.get(pk=kwargs['pk'])
+        company.logo = file
+        company.save()
+        return HttpResponse(json.dumps({'message': "Uploaded"}), status=200)
+
+
 class PriceViewSets(viewsets.ModelViewSet):
 
     serializer_class = PriceSerializer
@@ -61,7 +120,7 @@ class PriceViewSets(viewsets.ModelViewSet):
         return queryset
 
 
-class StockViewSets(viewsets.ModelViewSet):
+class StockViewSets(viewsets.ReadOnlyModelViewSet):
 
     serializer_class = StockSerializer
     permission_class = [DjangoModelPermissions]
@@ -71,7 +130,7 @@ class StockViewSets(viewsets.ModelViewSet):
         return queryset
 
 
-class StockMovementViewSets(viewsets.ModelViewSet):
+class StockMovementViewSets(viewsets.ReadOnlyModelViewSet):
 
     serializer_class = StockMovementSerializer
     permission_class = [DjangoModelPermissions]
@@ -89,6 +148,20 @@ class EntityViewSets(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = Entity.objects.filter(deletedAt=None)
         return queryset
+
+
+class EntityImageViewSet(UpdateAPIView):
+    
+    queryset = Entity.objects.filter(deletedAt=None)
+    serializer_class = EntityImageSerializer
+    lookup_field = 'pk'
+
+    def update(self, request, *args, **kwargs):
+        file = request.data['file']
+        company = Entity.objects.get(pk=kwargs['pk'])
+        company.logo = file
+        company.save()
+        return HttpResponse(json.dumps({'message': "Uploaded"}), status=200)
 
 
 class DocumentViewSets(viewsets.ModelViewSet):

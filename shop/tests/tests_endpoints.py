@@ -1,18 +1,21 @@
-from enum import auto
-from django.core import exceptions
+from django.core.files import uploadedfile
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.contrib.auth.models import User
 from django.utils import timezone
-from django.utils.module_loading import autodiscover_modules
 from rest_framework.test import APIClient
-from rest_framework.exceptions import MethodNotAllowed
-from shop.models.Deposit import Deposit
-from shop.models.Inventory import Inventory
+from django.core.files import File
 
 from shop.models.Stock import Stock
 from shop.models.Price import Price
+from shop.models.StockMovement import StockMovement
 
 from shop.tests.tests_models import AutoCreate as ShopAutoCreate
+
+def uploadFile(name):
+    data = File(open('shop/tests/img.jpeg', 'rb'))
+    upload_file = SimpleUploadedFile('file', data.read(),content_type='multipart/form-data')
+    return upload_file
 
 class AutoCreate:
 
@@ -242,7 +245,22 @@ class TestCase_001_Shop(TestCase):
 class TestCase_002_Company(TestCase):
 
     def test_001_is_valid_image_link(self):
-        self.skipTest('empty')        
+        autoShop = ShopAutoCreate(name='test_000001')
+        company = autoShop.createCompany()
+
+        User.objects.create_user(username='test1', password='test1', is_superuser=True)
+        client = APIClient()
+        response = client.post('/api/token/', 
+                    {'username': 'test1'
+                    , 'password': 'test1'}
+                , format='json')
+        token = response.data['access']
+        client.credentials(HTTP_AUTHORIZATION='Bearer ' + token)
+        response = client.put(
+            f'/shop/api/company/logo/{company.id}/', 
+            data={'file': open('shop/tests/img.jpeg', 'rb')},
+            format='multipart')
+        self.assertEqual(response.status_code, 200)   
 
     def test_002_get_company(self):
         shopAuto = ShopAutoCreate(name='test_000002')
@@ -308,7 +326,22 @@ class TestCase_002_Company(TestCase):
 class TestCase_003_Deposit(TestCase):
 
     def test_001_is_valid_image_link(self):
-        self.skipTest('empty')
+        autoShop = ShopAutoCreate(name='test_000001')
+        deposit = autoShop.createDeposit()
+
+        User.objects.create_user(username='test1', password='test1', is_superuser=True)
+        client = APIClient()
+        response = client.post('/api/token/', 
+                    {'username': 'test1'
+                    , 'password': 'test1'}
+                , format='json')
+        token = response.data['access']
+        client.credentials(HTTP_AUTHORIZATION='Bearer ' + token)
+        response = client.put(
+            f'/shop/api/deposit/logo/{deposit.id}/', 
+            data={'file': open('shop/tests/img.jpeg', 'rb')},
+            format='multipart')
+        self.assertEqual(response.status_code, 200)
 
     def test_002_get_deposit(self):
         autoShop = ShopAutoCreate(name='test_000001')
@@ -375,9 +408,6 @@ class TestCase_003_Deposit(TestCase):
 
 
 class TestCase_004_Document(TestCase):
-
-    def test_001_is_valid_image_link(self):
-        self.skipTest('empty')
 
     def test_002_get_document(self):
         autoShop = ShopAutoCreate(name='test_000001')
@@ -463,9 +493,6 @@ class TestCase_004_Document(TestCase):
 
 class TestCase_005_DocumentProduct(TestCase):
 
-    def test_001_is_valid_image_link(self):
-        self.skipTest('empty')
-
     def test_002_get_documentProduct(self):
         autoShop = ShopAutoCreate(name='test_000001')
         documentProduct = autoShop.createDocumentProduct()
@@ -538,7 +565,22 @@ class TestCase_005_DocumentProduct(TestCase):
 class TestCase_006_Entity(TestCase):
 
     def test_001_is_valid_image_link(self):
-        self.skipTest('empty')
+        autoShop = ShopAutoCreate(name='test_000001')
+        entity = autoShop.createEntity()
+
+        User.objects.create_user(username='test1', password='test1', is_superuser=True)
+        client = APIClient()
+        response = client.post('/api/token/', 
+                    {'username': 'test1'
+                    , 'password': 'test1'}
+                , format='json')
+        token = response.data['access']
+        client.credentials(HTTP_AUTHORIZATION='Bearer ' + token)
+        response = client.put(
+            f'/shop/api/entity/logo/{entity.id}/', 
+            data={'file': open('shop/tests/img.jpeg', 'rb')},
+            format='multipart')
+        self.assertEqual(response.status_code, 200)
 
     def test_002_get_entity(self):
         autoShop = ShopAutoCreate(name='test_000002')
@@ -693,8 +735,23 @@ class TestCase_007_Price(TestCase):
 class TestCase_008_Product(TestCase):
 
     def test_001_is_valid_image_link(self):
-        self.skipTest('empty')
+        autoShop = ShopAutoCreate(name='test_000001')
+        product = autoShop.createProduct()
 
+        User.objects.create_user(username='test1', password='test1', is_superuser=True)
+        client = APIClient()
+        response = client.post('/api/token/', 
+                    {'username': 'test1'
+                    , 'password': 'test1'}
+                , format='json')
+        token = response.data['access']
+        client.credentials(HTTP_AUTHORIZATION='Bearer ' + token)
+        response = client.put(
+            f'/shop/api/product/logo/{product.id}/', 
+            data={'file': open('shop/tests/img.jpeg', 'rb')},
+            format='multipart')
+        self.assertEqual(response.status_code, 200)
+        
     def test_002_get_product(self):
         autoShop = ShopAutoCreate(name='test_000002')
         product = autoShop.createProduct()
@@ -771,43 +828,185 @@ class TestCase_009_Stock(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_002_dont_post_stock(self):
-        self.skipTest('empty')
+        autoShop = ShopAutoCreate(name='test_000002')
+        deposit = autoShop.createDeposit()
+        product = autoShop.createProduct()
+
+        auto = AutoCreate()
+        try:
+            auto.post('/shop/api/stock/', {
+                        'deposit': deposit.id
+                        ,'product': product.id
+                        ,'count': 10
+                        })
+        except Exception as e:
+            self.assertEqual(e.status_code, 405)
 
     def test_003_dont_update_stock(self):
-        self.skipTest('empty')
+        autoShop = ShopAutoCreate(name='test_000003')
+        deposit = autoShop.createDeposit()
+        product = autoShop.createProduct()
+        autoShop.fullDocumentOperation()
+
+        stock = Stock.objects.get(deposit=deposit, product=product)
+
+        auto = AutoCreate()
+        try:
+            auto.put('/shop/api/stock/', stock.id, {
+                        'deposit': deposit.id
+                        ,'product': product.id
+                        ,'count': 10
+                        })
+        except Exception as e:
+            self.assertEqual(e.status_code, 405)
 
     def test_004_dont_delete_stock(self):
-        self.skipTest('empty')
+        autoShop = ShopAutoCreate(name='test_000004')
+        deposit = autoShop.createDeposit()
+        product = autoShop.createProduct()
+        autoShop.fullDocumentOperation()
+
+        stock = Stock.objects.get(deposit=deposit, product=product)
+
+        auto = AutoCreate()
+        try:
+            auto.delete('/shop/api/stock/', stock.id)
+        except Exception as e:
+            self.assertEqual(e.status_code, 405)
 
     def test_005_dont_show_deleted_items(self):
-        self.skipTest('empty')
+        autoShop = ShopAutoCreate(name='test_000005_001')
+        autoShop.fullDocumentOperation()
+
+        inventory = autoShop.createInventory()
+        autoShop.createInventoryProduct(value=0)
+        inventory.startedAt = timezone.now()
+        inventory.save()
+
+        inventory.isOpen = False
+        inventory.save()
+
+        deposit = autoShop.createDeposit()
+        product = autoShop.createProduct()
+
+        stock = Stock.objects.get(deposit=deposit, product=product)
+        stock.deletedAt = timezone.now()
+        stock.save()
+
+        auto = AutoCreate()
+        response = auto.get('/shop/api/stock/', id=stock.id)
+        self.assertEqual(response.status_code, 404)
     
     def test_006_dont_alter_deleted_items(self):
-        self.skipTest('empty')
+        autoShop = ShopAutoCreate(name='test_000006')
+        deposit = autoShop.createDeposit()
+        product = autoShop.createProduct()
+        autoShop.fullDocumentOperation()
+
+        inventory = autoShop.createInventory()
+        autoShop.createInventoryProduct(value=0)
+        inventory.startedAt = timezone.now()
+        inventory.save()
+
+        inventory.isOpen = False
+        inventory.save()
+
+        stock = Stock.objects.get(deposit=deposit, product=product)
+        stock.deletedAt = timezone.now()
+        stock.save()
+
+        auto = AutoCreate()
+        try:
+            auto.put('/shop/api/stock/', stock.id, {
+                        'deposit': deposit.id
+                        ,'product': product.id
+                        ,'count': 10
+                        })
+        except Exception as e:
+            self.assertEqual(e.status_code, 405)
 
     def test_007_dont_show_deletedAt(self):
-        self.skipTest('empty')
+        autoShop = ShopAutoCreate(name='test_000007')
+        deposit = autoShop.createDeposit()
+        product = autoShop.createProduct()
+        autoShop.fullDocumentOperation()
+
+        stock = Stock.objects.get(deposit=deposit, product=product)
+
+        auto = AutoCreate()
+        response = auto.get('/shop/api/stock/', id=stock.id)
+        self.assertFalse('deletedAt' in response.data)
 
 
 class TestCase_010_StockMovement(TestCase):
 
     def test_001_get_stockMovement(self):
-        self.skipTest('empty')
+        autoShop = ShopAutoCreate(name='test_000001')
+        deposit = autoShop.createDeposit()
+        product = autoShop.createProduct()
+        autoShop.fullDocumentOperation()
+
+        stockMovement = StockMovement.objects.filter(deposit=deposit, product=product).first()
+
+        auto = AutoCreate()
+        response = auto.get('/shop/api/stockmovement/', stockMovement.id)
+        self.assertEqual(response.status_code, 200)
 
     def test_002_dont_post_stockMovement(self):
-        self.skipTest('empty')
+        autoShop = ShopAutoCreate(name='test_000002')
+        deposit = autoShop.createDeposit()
+        product = autoShop.createProduct()
+
+        auto = AutoCreate()
+        try:
+            auto.post('/shop/api/stockmovement/', {
+                        'deposit': deposit.id
+                        ,'product': product.id
+                        ,'amount': 10
+                        })
+        except Exception as e:
+            self.assertEqual(e.status_code, 405)
 
     def test_003_dont_update_stockMovement(self):
-        self.skipTest('empty')
+        autoShop = ShopAutoCreate(name='test_000003')
+        deposit = autoShop.createDeposit()
+        product = autoShop.createProduct()
+        autoShop.fullDocumentOperation()
+
+        stockMovement = StockMovement.objects.filter(deposit=deposit, product=product).first()
+
+        auto = AutoCreate()
+        try:
+            auto.put('/shop/api/stockmovement/', stockMovement.id, {
+                        'deposit': deposit.id
+                        ,'product': product.id
+                        ,'amount': 10
+                        })
+        except Exception as e:
+            self.assertEqual(e.status_code, 405)
 
     def test_004_dont_delete_stockMovement(self):
-        self.skipTest('empty')
-    
-    def test_005_dont_show_deleted_items(self):
-        self.skipTest('empty')
-    
-    def test_006_dont_alter_deleted_items(self):
-        self.skipTest('empty')
+        autoShop = ShopAutoCreate(name='test_000004')
+        deposit = autoShop.createDeposit()
+        product = autoShop.createProduct()
+        autoShop.fullDocumentOperation()
 
+        stockMovement = StockMovement.objects.filter(deposit=deposit, product=product).first()
+
+        auto = AutoCreate()
+        try:
+            auto.delete('/shop/api/stockmovement/', stockMovement.id)
+        except Exception as e:
+            self.assertEqual(e.status_code, 405)
+       
     def test_007_dont_show_deletedAt(self):
-        self.skipTest('empty')
+        autoShop = ShopAutoCreate(name='test_000007')
+        deposit = autoShop.createDeposit()
+        product = autoShop.createProduct()
+        autoShop.fullDocumentOperation()
+
+        stockMovement = StockMovement.objects.filter(deposit=deposit, product=product).first()
+
+        auto = AutoCreate()
+        response = auto.get('/shop/api/stockmovement/', id=stockMovement.id)
+        self.assertFalse('deletedAt' in response.data)

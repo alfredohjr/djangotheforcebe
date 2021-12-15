@@ -19,6 +19,12 @@ class CompanySerializer(serializers.ModelSerializer):
         exclude=['deletedAt']
 
 
+class CompanyImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Company
+        fields = ('name', 'logo')
+
+
 class DepositSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -26,11 +32,23 @@ class DepositSerializer(serializers.ModelSerializer):
         exclude=['deletedAt']
 
 
+class DepositImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Deposit
+        fields = ('name', 'logo')
+
+
 class ProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model=Product
         exclude=['deletedAt']
+
+
+class ProductImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = ('name', 'logo')
 
 
 class PriceSerializer(serializers.ModelSerializer):
@@ -61,6 +79,12 @@ class EntitySerializer(serializers.ModelSerializer):
     class Meta:
         model=Entity
         exclude=['deletedAt']
+
+
+class EntityImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Entity
+        fields = ('name', 'logo')
 
 
 class DocumentSerializer(serializers.ModelSerializer):

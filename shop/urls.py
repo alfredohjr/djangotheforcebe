@@ -4,7 +4,21 @@ from django.urls.conf import include
 from rest_framework import routers
 
 from shop import views
-from shop.api.viewsets import CompanyViewSets, DepositViewSets, DocumentProductViewSets, DocumentViewSets, EntityViewSets, PriceViewSets, ProductViewSets, ShopProductViewSet, StockMovementViewSets, StockViewSets
+from shop.api.viewsets import (
+    CompanyViewSets
+    , DepositViewSets
+    , DocumentProductViewSets
+    , DocumentViewSets
+    , EntityViewSets
+    , PriceViewSets
+    , ProductViewSets
+    , ShopProductViewSet
+    , StockMovementViewSets
+    , StockViewSets
+    , CompanyImageViewSet
+    , DepositImageViewSet
+    , EntityImageViewSet
+    , ProductImageViewSet)
 
 router = routers.DefaultRouter()
 router.register('company', CompanyViewSets, basename='shopcompany')
@@ -19,9 +33,16 @@ router.register('documentproduct', DocumentProductViewSets, basename='shopdocume
 router.register('shop', ShopProductViewSet, basename='shop4ecommerce')
 
 urlpatterns = [
+    path('api/company/logo/<int:pk>/', CompanyImageViewSet.as_view(), name='shopcompanylogo'),
+    path('api/deposit/logo/<int:pk>/', DepositImageViewSet.as_view(), name='shopdepositlogo'),
+    path('api/entity/logo/<int:pk>/', EntityImageViewSet.as_view(), name='shopentitylogo'),
+    path('api/product/logo/<int:pk>/', ProductImageViewSet.as_view(), name='shopproductlogo'),
+
     path('api/',include(router.urls)),
     path('order/<int:document_id>/', views.createOrder, name='order2pdf'),
     path('sale/document/<int:document_id>/', views.createSaleDocument, name='doc2pdf'),
     path('report/product/', views.reportProduct, name='repProduct'),
     path('report/price/', views.reportPrice, name='repPrice'),
+
+
 ]
