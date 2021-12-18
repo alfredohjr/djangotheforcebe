@@ -18,10 +18,16 @@ def my_custom_sql(sql):
 
 class Product(models.Model):
 
+    PRODUCT_TYPES = (
+        ('NOR', 'Normal'),
+        ('KIT', 'Kit'),
+    )
+
     name = models.CharField(max_length=30)
     margin = models.DecimalField(max_digits=5,decimal_places=3,default=0)
     logo = models.ImageField(upload_to='product', null=True, blank=True)
     description = models.TextField(null=True, blank=True)
+    productType = models.CharField(choices=PRODUCT_TYPES, max_length=3, default='NOR')
     createdAt = models.DateTimeField(auto_now_add=True)
     updatedAt = models.DateTimeField(auto_now=True)
     deletedAt = models.DateTimeField(null=True, blank=True)

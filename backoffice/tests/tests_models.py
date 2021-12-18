@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 from backoffice.models.PaymentMethod import PaymentMethod
@@ -41,19 +42,86 @@ class AutoCreate:
 class TestCase_001_ModelPaymentMethod(TestCase):
 
     def test_001_create(self):
-        self.skipTest('empty')
+        paymentMethod = PaymentMethod()
+        paymentMethod.name = 'test_001_create'
+        paymentMethod.isPortion = True
+        paymentMethod.portionAmount = 7
+        paymentMethod.dueDate = 6
+        paymentMethod.portionRegex = '15/30/45/60'
+        paymentMethod.percentagePerDelay = 3
+        paymentMethod.percentageDiscount = 8
+        paymentMethod.save()
+
+        paymentMethod = PaymentMethod.objects.filter(name='test_001_create')
+        self.assertTrue(paymentMethod)
+
 
     def test_002_update(self):
-        self.skipTest('empty')
+        paymentMethod = PaymentMethod()
+        paymentMethod.name = 'test_002_update'
+        paymentMethod.isPortion = True
+        paymentMethod.portionAmount = 7
+        paymentMethod.dueDate = 6
+        paymentMethod.portionRegex = '15/30/45/60'
+        paymentMethod.percentagePerDelay = 3
+        paymentMethod.percentageDiscount = 8
+        paymentMethod.save()
+
+        paymentMethod = PaymentMethod.objects.get(name='test_002_update')
+        paymentMethod.name = 'test_002_update_2'
+        paymentMethod.save()
+
+        self.assertEqual(paymentMethod.name, 'test_002_update_2')
 
     def test_999_delete(self):
-        self.skipTest('empty')
+        paymentMethod = PaymentMethod()
+        paymentMethod.name = 'test_999_delete'
+        paymentMethod.isPortion = True
+        paymentMethod.portionAmount = 7
+        paymentMethod.dueDate = 6
+        paymentMethod.portionRegex = '15/30/45/60'
+        paymentMethod.percentagePerDelay = 3
+        paymentMethod.percentageDiscount = 8
+        paymentMethod.save()
 
-    def test_003_inCash_isPortion_equal_1(self):
-        self.skipTest('empty')
+        paymentMethod = PaymentMethod.objects.get(name='test_999_delete')
+        paymentMethod.delete()
+
+        paymentMethod = PaymentMethod.objects.get(name='test_999_delete')
+        self.assertIsNotNone(paymentMethod.deletedAt)
+
+    def test_003_inCash_isPortion_equal_False(self):
+        paymentMethod = PaymentMethod()
+        paymentMethod.name = 'test_003'
+        paymentMethod.inCash = True
+        paymentMethod.isPortion = True
+        paymentMethod.portionAmount = 1
+        paymentMethod.dueDate = 0
+        paymentMethod.portionRegex = '15/30/45/60'
+        paymentMethod.percentagePerDelay = 3
+        paymentMethod.percentageDiscount = 8
+        self.assertRaises(ValidationError, paymentMethod.save)
 
     def test_004_inCash_portionAmount_equal_1(self):
-        self.skipTest('empty')
+        paymentMethod = PaymentMethod()
+        paymentMethod.name = 'test_003'
+        paymentMethod.inCash = True
+        paymentMethod.isPortion = False
+        paymentMethod.portionAmount = 1
+        paymentMethod.dueDate = 0
+        paymentMethod.portionRegex = '15/30/45/60'
+        paymentMethod.percentagePerDelay = 3
+        paymentMethod.percentageDiscount = 8
+        paymentMethod.save()
+
+        for i in range(-50,50):
+
+            paymentMethod = PaymentMethod.objects.get(name='test_003')
+            paymentMethod.portionAmount = i
+            if i == 1:
+                self.assertTrue(paymentMethod.save)
+            else:
+                self.assertRaises(ValidationError, paymentMethod.save)
 
     def test_005_inCash_dueDate_is_now(self):
         self.skipTest('empty')

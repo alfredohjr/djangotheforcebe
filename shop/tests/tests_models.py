@@ -2655,6 +2655,34 @@ class TestCase_018_ModelDocumentFolder(TestCase):
         self.assertEqual(log.count(), 1)
         
 
+class TestCase_019_ProductKit(TestCase):
+
+    def test_001_create(self):
+        self.skipTest('test_001_create')
+
+    def test_002_update(self):
+        self.skipTest('test_002_update')
+
+    def test_003_delete(self):
+        self.skipTest('test_003_delete')
+
+    def test_004_dont_repeat_main_and_kit(self):
+        self.skipTest('test_004_dont_repeat_main_and_kit')
+
+    def test_005_if_product_is_detedAt_delete(self):
+        self.skipTest('test_005_if_product_is_detedAt_delete')
+    
+    def test_006_productType_normal_is_not_main(self):
+        self.skipTest('test_006_productType_normal_is_not_main')
+    
+    def test_007_max_kit_level_is_3(self):
+        self.skipTest('test_007_max_kit_level_is_3')
+    
+    def test_008_calculate_kit_in_price_create(self):
+        self.skipTest('test_008_calculate_kit_in_price_create')
+
+    def test_009_create_function_to_calculate_kit_amount(self):
+        self.skipTest('test_009_calculate_kit_amount')
 
 class TestCase_010_ModelCompanyLog(TestCase):
     
@@ -2728,7 +2756,7 @@ class TestCase_015_ModelInventoryLog(TestCase):
         log.message = 'update log'
         self.assertRaises(ValidationError, log.save)
 
-class TestCase_015_ModelDocumentFolderLog(TestCase):
+class TestCase_016_ModelDocumentFolderLog(TestCase):
 
     def test_001_dont_update_log_register(self):
         auto = AutoCreate('test_000001')

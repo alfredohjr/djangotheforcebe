@@ -18,7 +18,9 @@ from shop.api.viewsets import (
     , CompanyImageViewSet
     , DepositImageViewSet
     , EntityImageViewSet
-    , ProductImageViewSet)
+    , ProductImageViewSet
+    , DocumentCloseViewSet
+    , DocumentReOpenViewSet)
 
 router = routers.DefaultRouter()
 router.register('company', CompanyViewSets, basename='shopcompany')
@@ -31,12 +33,16 @@ router.register('entity', EntityViewSets, basename='shopentity')
 router.register('document', DocumentViewSets, basename='shopdocument')
 router.register('documentproduct', DocumentProductViewSets, basename='shopdocumentproduct')
 router.register('shop', ShopProductViewSet, basename='shop4ecommerce')
+# TODO: create viewset to DocumentFolder, Inventory and inventory product
+
 
 urlpatterns = [
     path('api/company/logo/<int:pk>/', CompanyImageViewSet.as_view(), name='shopcompanylogo'),
     path('api/deposit/logo/<int:pk>/', DepositImageViewSet.as_view(), name='shopdepositlogo'),
     path('api/entity/logo/<int:pk>/', EntityImageViewSet.as_view(), name='shopentitylogo'),
     path('api/product/logo/<int:pk>/', ProductImageViewSet.as_view(), name='shopproductlogo'),
+    path('api/document/close/<int:pk>/', DocumentCloseViewSet.as_view(), name='documentclose'),
+    path('api/document/reopen/<int:pk>/', DocumentReOpenViewSet.as_view(), name='documentreopen'),
 
     path('api/',include(router.urls)),
     path('order/<int:document_id>/', views.createOrder, name='order2pdf'),

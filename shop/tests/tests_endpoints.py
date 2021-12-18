@@ -9,6 +9,7 @@ from django.core.files import File
 from shop.models.Stock import Stock
 from shop.models.Price import Price
 from shop.models.StockMovement import StockMovement
+from shop.models.Document import Document
 
 from shop.tests.tests_models import AutoCreate as ShopAutoCreate
 
@@ -37,7 +38,7 @@ class AutoCreate:
     def post(self,url,data):
         return self.client.post(url, data=data, format='json')
 
-    def put(self,url,id,data):
+    def put(self,url,id,data=None):
         return self.client.put(f'{url}{id}/', data=data, format='json')
 
     def delete(self,url,id):
@@ -457,10 +458,28 @@ class TestCase_004_Document(TestCase):
         self.assertEqual(response.status_code, 204)
 
     def test_006_close_document(self):
-        self.skipTest('empty')
+        autoShop = ShopAutoCreate(name='test_000006')
+        document = autoShop.createDocument()
+        autoShop.createDocumentProduct()
+
+        auto = AutoCreate()
+        response = auto.put('/shop/api/document/close/', id=document.id)
+        self.assertEqual(response.status_code, 200)
+
+        document = Document.objects.get(id=document.id)
+        self.assertFalse(document.isOpen)
 
     def test_007_reopen_document(self):
-        self.skipTest('empty')
+        autoShop = ShopAutoCreate(name='test_000007')
+        document = autoShop.createDocument()
+        autoShop.createDocumentProduct()
+
+        auto = AutoCreate()
+        auto.put('/shop/api/document/close/', id=document.id)
+        auto.put('/shop/api/document/reopen/', id=document.id, data={'reason': 'test_000007_001 reason reason reason'}) 
+
+        document = Document.objects.get(id=document.id)
+        self.assertTrue(document.isOpen)
 
     def test_008_dont_show_deleted_items(self):
         autoShop = ShopAutoCreate(name='test_000008')

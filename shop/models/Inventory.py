@@ -89,7 +89,7 @@ class Inventory(models.Model):
                     payment = PaymentMethod()
                     payment.name = '[INV]'
                     payment.inCash = True
-                    payment.portionAmount = 0
+                    payment.portionAmount = 1
                     payment.dueDate = 0
                     payment.percentagePerDelay = 0
                     payment.percentageDiscount = 0

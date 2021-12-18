@@ -1,5 +1,6 @@
 from django.db import models
-
+from django.utils import timezone
+from django.core.exceptions import ValidationError
 
 class PaymentMethod(models.Model):
 
@@ -17,3 +18,20 @@ class PaymentMethod(models.Model):
 
     def __str__(self):
         return self.name
+
+    def delete(self):
+        self.deletedAt = timezone.now()
+        self.save()
+
+    def save(self, *args, **kwargs):
+        if self.portionAmount < 0:
+            raise ValidationError('Portion amount must be greater than 0')
+
+        if self.inCash:
+            if self.portionAmount != 1:
+                raise ValidationError('Portion amount must be 1 when inCash is True')
+
+            if self.isPortion:
+                raise ValidationError('Portion must be False when inCash is True')
+
+        super().save(*args, **kwargs)

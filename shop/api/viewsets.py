@@ -174,6 +174,29 @@ class DocumentViewSets(viewsets.ModelViewSet):
         return queryset
 
 
+class DocumentCloseViewSet(UpdateAPIView):
+
+    queryset = Document.objects.filter(deletedAt=None)
+
+    def update(self, request, *args, **kwargs):
+        document = Document.objects.get(pk=kwargs['pk'])
+        document.close()
+        return HttpResponse(json.dumps({'message': "Closed"}), status=200)
+
+
+class DocumentReOpenViewSet(UpdateAPIView):
+
+    queryset = Document.objects.filter(deletedAt=None)
+
+    def update(self, request, *args, **kwargs):
+        if 'reason' in request.data:
+            document = Document.objects.get(pk=kwargs['pk'])
+            document.reOpenDocument(reason=request.data['reason'])
+            return HttpResponse(json.dumps({'message': "open"}), status=200)
+        else:
+            return HttpResponse(json.dumps({'message': "Reason is required"}), status=400)
+
+
 class DocumentProductViewSets(viewsets.ModelViewSet):
 
     serializer_class = DocumentProductSerializer
