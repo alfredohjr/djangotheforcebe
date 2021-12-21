@@ -9,6 +9,7 @@ from shop.models.Stock import Stock
 from shop.models.ProductLog import ProductLog
 from shop.models.InventoryProduct import InventoryProduct
 from shop.models.DocumentProduct import DocumentProduct
+from shop.models.ProductKit import ProductKit
 
 def my_custom_sql(sql):
     with connection.cursor() as cursor:
@@ -56,6 +57,17 @@ class Product(models.Model):
 
         self.deletedAt = timezone.now()
         self.save()
+
+        productKitMain = ProductKit.objects.filter(productMain__id=self.id)
+        if productKitMain:
+            for pk in productKitMain:
+                pk.delete()
+
+        productKitChild = ProductKit.objects.filter(productChild__id=self.id)
+        if productKitChild:
+            for pk in productKitChild:
+                pk.delete()
+
         log = ProductLog()
         log.register(id=self.id, table='product', transaction='del', message='deleted')
 
