@@ -128,7 +128,7 @@ def pre_save_DocumentProduct(sender, instance, **kwargs):
                         , startedAt = tomorrow
                         , priceType='NO')
             price.save()
-
+            price.forKit()
     # for logs
     if documentProduct:
         message = []

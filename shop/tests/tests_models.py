@@ -28,6 +28,7 @@ from shop.models.Product import Product
 from shop.models.ProductLog import ProductLog
 from shop.models.Stock import Stock
 from shop.models.StockMovement import StockMovement
+from shop.models.ProductKit import ProductKit
 
 from backoffice.tests.tests_models import AutoCreate as BackOfficeAutoCreate
 
@@ -86,14 +87,14 @@ class AutoCreate:
                 ,entityType=entityType)
             return entity
 
-    def createProduct(self,name=None):
+    def createProduct(self,name=None,productType='NOR',margin=0):
         if name is None:
             name = self.name
         product = Product.objects.filter(name=name)
         if product:
             return product[0]
         else:
-            product = Product.objects.create(name=name)
+            product = Product.objects.create(name=name,productType=productType,margin=margin)
             return product
 
     def createDocumentFolder(self,name=None,documentType='IN',financial=False, stock=True):
@@ -2658,31 +2659,231 @@ class TestCase_018_ModelDocumentFolder(TestCase):
 class TestCase_019_ProductKit(TestCase):
 
     def test_001_create(self):
-        self.skipTest('test_001_create')
+        auto = AutoCreate('test_000001')
+        product1 = auto.createProduct(productType='KIT')
+        product2 = auto.createProduct(name='test_000001_2')
+
+        productKit = ProductKit()
+        productKit.productMain = product1
+        productKit.productChild = product2
+        productKit.save()
+
+        productKit = ProductKit.objects.get(id=productKit.id)
+        self.assertTrue(productKit)
 
     def test_002_update(self):
-        self.skipTest('test_002_update')
+        auto = AutoCreate('test_000002')
+        product1 = auto.createProduct(productType='KIT')
+        product2 = auto.createProduct(name='test_000002_2')
+        product3 = auto.createProduct(name='test_000002_3', productType='KIT')
+
+        productKit = ProductKit()
+        productKit.productMain = product1
+        productKit.productChild = product2
+        productKit.save()
+
+        productKit = ProductKit.objects.get(id=productKit.id)
+        productKit.productMain = product3
+        productKit.save()
+
+        productKit = ProductKit.objects.get(id=productKit.id)
+        self.assertEqual(productKit.productMain, product3)
 
     def test_003_delete(self):
-        self.skipTest('test_003_delete')
+        auto = AutoCreate('test_000003')
+        product1 = auto.createProduct(productType='KIT')
+        product2 = auto.createProduct(name='test_000003_2')
+
+        productKit = ProductKit()
+        productKit.productMain = product1
+        productKit.productChild = product2
+        productKit.save()
+
+        productKit = ProductKit.objects.get(id=productKit.id)
+        productKit.delete()
+
+        productKit = ProductKit.objects.get(id=productKit.id)
+        self.assertIsNotNone(productKit.deletedAt)
 
     def test_004_dont_repeat_main_and_kit(self):
-        self.skipTest('test_004_dont_repeat_main_and_kit')
+        auto = AutoCreate('test_000004')
+        product1 = auto.createProduct(productType='KIT')
+
+        productKit = ProductKit()
+        productKit.productMain = product1
+        productKit.productChild = product1
+        self.assertRaises(ValidationError, productKit.save)
 
     def test_005_if_product_is_detedAt_delete(self):
-        self.skipTest('test_005_if_product_is_detedAt_delete')
+        auto = AutoCreate('test_000005')
+        product1 = auto.createProduct(productType='KIT')
+        product2 = auto.createProduct(name='test_000005_2')
+
+        productKit = ProductKit()
+        productKit.productMain = product1
+        productKit.productChild = product2
+        productKit.save()
+
+        product1.delete()
+
+        productKit = ProductKit.objects.get(id=productKit.id)
+        self.assertIsNotNone(productKit.deletedAt)
+
+        product3 = auto.createProduct(name='test_000005_3', productType='KIT')
+        product4 = auto.createProduct(name='test_000005_4')
+
+        productKit = ProductKit()
+        productKit.productMain = product3
+        productKit.productChild = product4
+        productKit.save()
+
+        product4.delete()
+
+        productKit = ProductKit.objects.get(id=productKit.id)
+        self.assertIsNotNone(productKit.deletedAt)
     
     def test_006_productType_normal_is_not_main(self):
-        self.skipTest('test_006_productType_normal_is_not_main')
+        auto = AutoCreate('test_000006')
+        product1 = auto.createProduct()
+        product2 = auto.createProduct(name='test_000006_2')
+
+        productKit = ProductKit()
+        productKit.productMain = product1
+        productKit.productChild = product2
+        self.assertRaises(ValidationError, productKit.save)
     
     def test_007_max_kit_level_is_3(self):
-        self.skipTest('test_007_max_kit_level_is_3')
+        auto = AutoCreate('test_000007')
+
+        product1 = auto.createProduct(productType='KIT')
+        product2 = auto.createProduct(name='test_000007_2', productType='KIT')
+
+        productKit = ProductKit()
+        productKit.productMain = product1
+        productKit.productChild = product2
+        productKit.save()
+
+        product3 = auto.createProduct(name='test_000007_3', productType='KIT')
+
+        productKit = ProductKit()
+        productKit.productMain = product2
+        productKit.productChild = product3
+        productKit.save()
+
+        product4 = auto.createProduct(name='test_000007_4', productType='KIT')
+
+        productKit = ProductKit()
+        productKit.productMain = product3
+        productKit.productChild = product4
+        self.assertRaises(ValidationError, productKit.save)
     
     def test_008_calculate_kit_in_price_create(self):
-        self.skipTest('test_008_calculate_kit_in_price_create')
+        auto = AutoCreate('test_000008')
+        deposit = auto.createDeposit()
+
+        product1 = auto.createProduct(productType='KIT')
+        product2 = auto.createProduct(name='test_000008_2',margin=10)
+        product3 = auto.createProduct(name='test_000008_3',margin=15)
+        product4 = auto.createProduct(name='test_000008_4',margin=20)
+
+        document = auto.createDocument()
+
+        documentProduct = DocumentProduct()
+        documentProduct.product = product2
+        documentProduct.document = document
+        documentProduct.amount = 10
+        documentProduct.value = 100
+        documentProduct.save()
+
+        documentProduct = DocumentProduct()
+        documentProduct.product = product3
+        documentProduct.document = document
+        documentProduct.amount = 10
+        documentProduct.value = 100
+        documentProduct.save()
+
+        documentProduct = DocumentProduct()
+        documentProduct.product = product4
+        documentProduct.document = document
+        documentProduct.amount = 10
+        documentProduct.value = 100
+        documentProduct.save()
+        
+        document.close()
+
+        productKit = ProductKit()
+        productKit.productMain = product1
+        productKit.productChild = product2
+        productKit.amount = 2
+        productKit.save()
+
+        productKit = ProductKit()
+        productKit.productMain = product1
+        productKit.productChild = product3
+        productKit.amount = 3
+        productKit.save()
+
+        productKit = ProductKit()
+        productKit.productMain = product1
+        productKit.productChild = product4
+        productKit.amount = 4
+        productKit.save()
+
+        price = Price()
+        price.product = product2
+        price.deposit = deposit
+        price.value = 10
+        price.startedAt = djangoTimezone.now()
+        price.priceType = 'NO'
+        price.save()
+
+        price.forKit()
+
+        price = Price.objects.filter(product=product1, deposit=deposit).first()
+        self.assertEqual(price.value, 1045)
 
     def test_009_create_function_to_calculate_kit_amount(self):
         self.skipTest('test_009_calculate_kit_amount')
+    
+    def test_010_if_productType_is_Kit_read_table(self):
+        self.skipTest('test_010_if_productType_is_Kit_read_table')
+
+    def test_011_if_productType_is_Kit_read_table(self):
+        self.skipTest('test_011_if_productType_is_Kit_read_table')
+
+    def test_012_if_productType_is_Kit_read_table(self):
+        self.skipTest('test_012_if_productType_is_Kit_read_table')
+
+    def test_013_if_productType_is_Kit_read_table(self):
+        self.skipTest('test_013_if_productType_is_Kit_read_table')
+
+    def test_014_if_productType_is_Kit_read_table(self):
+        self.skipTest('test_014_if_productType_is_Kit_read_table')
+
+    def test_015_if_productType_is_Kit_read_table(self):
+        self.skipTest('test_015_if_productType_is_Kit_read_table')
+
+    def test_016_if_productType_is_Kit_read_table(self):
+        self.skipTest('test_016_if_productType_is_Kit_read_table')
+
+    def test_017_if_productType_is_Kit_read_table(self):
+        self.skipTest('test_017_if_productType_is_Kit_read_table')
+
+    def test_018_if_productType_is_Kit_read_table(self):
+        self.skipTest('test_018_if_productType_is_Kit_read_table')
+
+    def test_019_if_productType_is_Kit_read_table(self):
+        self.skipTest('test_019_if_productType_is_Kit_read_table')
+
+    def test_020_if_productType_is_Kit_read_table(self):
+        self.skipTest('test_020_if_productType_is_Kit_read_table')
+
+    def test_021_if_productType_is_Normal_dont_read_table(self):
+        self.skipTest('test_021_if_productType_is_Kit_read')
+
+    def test_022_write_log(self):
+        self.skipTest('test_022_write_log')
+
 
 class TestCase_010_ModelCompanyLog(TestCase):
     

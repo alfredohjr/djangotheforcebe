@@ -7,6 +7,7 @@ from django.dispatch import receiver
 
 from shop.models.Stock import Stock
 from shop.models.ProductLog import ProductLog
+from shop.models.ProductKit import ProductKit
 
 datetime_format = '%d/%m/%Y %H:%M'
 
@@ -49,6 +50,23 @@ class Price(models.Model):
 
     def close(self):
         self.delete()
+    
+    def forKit(self):
+        productKit = ProductKit.objects.filter(productChild=self.product).values('productMain').distinct()
+        for product in productKit:
+            productKitN2 = ProductKit.objects.filter(productMain=product['productMain'])
+            value = 0
+            for productN2 in productKitN2:
+                stock = Stock.objects.get(deposit=self.deposit, product=productN2.productChild)
+                value += (productN2.amount * stock.value)*((stock.product.margin/100)+1)
+            price = Price()
+            price.deposit = self.deposit
+            price.product_id = product['productMain']
+            price.value = value
+            price.priceType = 'NO'
+            price.startedAt = timezone.now()
+            price.save()
+
 
 @receiver(pre_save, sender=Price)
 def pre_save_price(sender, instance, *args, **kwargs):

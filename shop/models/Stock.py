@@ -42,6 +42,10 @@ class Stock(models.Model):
     def close(self):
         self.delete()
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+
 
 @receiver(pre_save, sender=Stock)
 def pre_save_stock(sender, instance, *args, **kwargs):

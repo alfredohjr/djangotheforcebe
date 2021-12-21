@@ -7,6 +7,7 @@ from shop.models.DocumentFolder import DocumentFolder
 from shop.models.Inventory import Inventory
 from shop.models.InventoryProduct import InventoryProduct
 from shop.models.Product import Product
+from shop.models.ProductKit import ProductKit
 from shop.models.Price import Price
 from shop.models.Stock import Stock
 from shop.models.StockMovement import StockMovement
@@ -71,3 +72,4 @@ admin.site.register(Document, DocumentAdmin)
 admin.site.register(DocumentFolder)
 admin.site.register(Inventory)
 admin.site.register(InventoryProduct)
+admin.site.register(ProductKit)

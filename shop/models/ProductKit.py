@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
@@ -24,7 +25,18 @@ class ProductKit(models.Model):
     def save(self, *args, **kwargs):
         
         if self.productMain == self.productChild:
-            raise Exception('ProductMain and ProductChild must be different')
+            raise ValidationError('ProductMain and ProductChild must be different')
+        
+        if self.productMain.productType == 'NOR':
+            raise ValidationError('ProductMain must be kit')
+
+        productKit = ProductKit.objects.filter(productChild=self.productMain)
+        if productKit:
+            for pk in productKit:
+                pk = ProductKit.objects.filter(productChild=pk.productMain)
+                if pk:
+                    raise ValidationError('ProductMain must be kit')
+
 
         super().save(*args, **kwargs)
     
