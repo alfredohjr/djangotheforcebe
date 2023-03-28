@@ -1,6 +1,7 @@
 from django.urls import path
 from django.urls.conf import include
 from rest_framework import routers
+from rest_framework.schemas import get_schema_view
 
 from shop.api.viewsets import CompanyViewSets, DepositViewSets, DocumentProductViewSets, DocumentViewSets, EntityViewSets, PriceViewSets, ProductViewSets, StockMovementViewSets, StockViewSets
 
