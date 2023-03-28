@@ -36,6 +36,8 @@ class Entity(models.Model):
 
     class Meta:
         unique_together = (('name','identifier','identifierType','entityType'),)
+        verbose_name = '006 - Entity'
+        verbose_name_plural = '006 - Entities'
 
     def delete(self):
 

@@ -20,20 +20,22 @@ class Deposit(models.Model):
         stock = Stock.objects.filter(deposit_id = self.id)
         for s in stock:
             total += s.value * s.amount
-        return total
+        return "$%.2f" %total
 
     def totalAmount(self):
         total = 0
         stock = Stock.objects.filter(deposit_id = self.id)
         for s in stock:
             total += s.amount
-        return total
+        return "%.2f" %total
 
     def __str__(self):
         return self.name
 
     class Meta:
         unique_together = (('name'),)
+        verbose_name = '002 - Deposit'
+        verbose_name_plural = '002 - Deposits'
 
     def open(self):
         self.deletedAt = None

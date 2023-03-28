@@ -22,10 +22,22 @@ class Stock(models.Model):
             return True
     
     def total(self):
-        return self.value * self.amount
+        return "$%.2f" %(self.value * self.amount)
 
     def __str__(self):
         return f'o deposito {self.deposit.name} tem {self.amount} do produto {self.product}'
+    
+    @property
+    def stockValue(self):
+        return "$%.2f" %self.value
+    
+    @property
+    def amountValue(self):
+        return "%.2f" %self.amount
+    
+    class Meta:
+        verbose_name = '005 - Stock'
+        verbose_name_plural = '005 - Stocks'
 
     def delete(self):
         if self.amount == 0:

@@ -21,6 +21,14 @@ class CompanyLog(models.Model):
     updatedAt = models.DateTimeField(auto_now=True)
     deletedAt = models.DateTimeField(blank=True, null=True)
 
+    class Meta:
+        verbose_name = '001.001 - Company Log'
+        verbose_name_plural = '001.001 - Companies Log'
+        ordering = ['-createdAt']
+
+    def __str__(self):
+        return f"{self.createdAt} - [{self.table}].[{self.transaction}].[{self.company_id} - {self.company}] -> {self.message}"
+
     def delete(self):
         self.deletedAt = timezone.now()
         self.save()

@@ -23,18 +23,21 @@ class Document(models.Model):
     updatedAt = models.DateTimeField(auto_now=True)
     deletedAt = models.DateTimeField(null=True, blank=True)
 
+    @property
     def total(self):
         products = DocumentProduct.objects.filter(document__id=self.id)
         total = 0
         for p in products:
             total += p.value * p.amount
-        return total
+        return "$%.2f" %total
 
     def __str__(self):
         return self.key
 
     class Meta:
         unique_together = (('key','documentType'),)
+        verbose_name = '007 - Document'
+        verbose_name_plural = '007 - Document'
 
     def delete(self):
 

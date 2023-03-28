@@ -28,6 +28,12 @@ class Product(models.Model):
 
     class Meta:
         unique_together = (('name'),)
+        verbose_name = '003 - Product'
+        verbose_name_plural = '003 - Products'
+
+    @property
+    def marginValue(self):
+        return "%.2f%%" %self.margin
 
     def delete(self):
 

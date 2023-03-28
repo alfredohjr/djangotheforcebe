@@ -32,10 +32,18 @@ class Price(models.Model):
         pass
 
     def stockNow(self):
-        return Stock.objects.get(deposit=self.deposit, product=self.product).amount
+        return "%.2f" %Stock.objects.get(deposit=self.deposit, product=self.product).amount
 
     def __str__(self):
         return self.product.name
+    
+    class Meta:
+        verbose_name = '004 - Price'
+        verbose_name_plural = '004 - Prices'
+
+    @property
+    def priceValue(self):
+        return "$%.2f" %self.value
     
     def delete(self):
         self.deletedAt = timezone.now()

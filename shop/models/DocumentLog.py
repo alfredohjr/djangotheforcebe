@@ -21,6 +21,14 @@ class DocumentLog(models.Model):
     updatedAt = models.DateTimeField(auto_now=True)
     deletedAt = models.DateTimeField(blank=True, null=True)
 
+    class Meta:
+        verbose_name = '007.001 - Document Log'
+        verbose_name_plural = '007.001 - Documents Log'
+        ordering = ['-createdAt']
+
+    def __str__(self):
+        return f"{self.createdAt} - [{self.table}].[{self.transaction}].[{self.document_id} - {self.document}] -> {self.message}"
+
     def delete(self):
         self.deletedAt = timezone.now()
         self.save()

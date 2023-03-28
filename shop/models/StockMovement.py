@@ -29,6 +29,10 @@ class StockMovement(models.Model):
         ret += f'na data {self.createdAt.strftime(datetime_format)}'
         return ret
     
+    class Meta:
+        verbose_name = '005.001 - Stock Movement'
+        verbose_name_plural = '005.001 - Stocks Movement'
+    
     def delete(self):
         return True
     

@@ -21,6 +21,14 @@ class EntityLog(models.Model):
     updatedAt = models.DateTimeField(auto_now=True)
     deletedAt = models.DateTimeField(blank=True, null=True)
 
+    class Meta:
+        verbose_name = '006.001 - Entity Log'
+        verbose_name_plural = '006.001 - Entities Log'
+        ordering = ['-createdAt']
+
+    def __str__(self):
+        return f"{self.createdAt} - [{self.table}].[{self.transaction}].[{self.entity_id} - {self.entity}] -> {self.message}"
+
     def delete(self):
         self.deletedAt = timezone.now()
         self.save()

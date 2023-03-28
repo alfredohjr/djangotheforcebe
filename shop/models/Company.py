@@ -22,6 +22,8 @@ class Company(models.Model):
 
     class Meta:
         unique_together = (('name'),)
+        verbose_name = '001 - Company'
+        verbose_name_plural = '001 - Companies'
 
     def delete(self):
         deposits = Deposit.objects.filter(company_id=self.id)
@@ -87,6 +89,7 @@ def pre_save_company(sender, instance, *args, **kwargs):
 
 @receiver(post_save,sender=Company)
 def post_save_company(sender, instance, created, *args, **kwargs):
+
     if created:
         log = CompanyLog()
         log.register(id=instance.id,table='company',transaction='cre',message='created')
