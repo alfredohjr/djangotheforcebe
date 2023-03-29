@@ -8,19 +8,33 @@ The following are the main features of The Force Backend:
 
 **Company**: Allows you to register a company, which includes basic information such as name, address, and contact details.[Detail here](_docs/shop/company.md)
 
+![](_docs/shop/gifs/company.gif)
+
 **Deposit**: Allows you to register a warehouse or store where you keep your products. You can assign products to different deposits and manage their inventory accordingly.[Detail here](_docs/shop/deposit.md)
+
+![](_docs/shop/gifs/deposit.gif)
 
 **Product**: Allows you to register different products that you sell. You can specify the name, description, and other details of each product.[Detail here](_docs/shop/product.md)
 
+![](_docs/shop/gifs/product.gif)
+
 **Price**: Allows you to set different prices for your products. You can specify the price for a particular product in a particular currency.[Detail here](_docs/shop/price.md)
+
+![](_docs/shop/gifs/price.gif)
 
 **Entity**: Allows you to register customers and suppliers. You can specify their basic information such as name, address, and contact details.[Detail here](_docs/shop/entity.md)
 
+![](_docs/shop/gifs/entity.gif)
+
 **Document**: Allows you to manage documents such as invoices, purchase orders, and delivery notes. You can specify the type of document, the associated entity, and the products involved.[Detail here](_docs/shop/document.md)
+
+![](_docs/shop/gifs/document.gif)
 
 **DocumentProduct**: Allows you to specify the details of each product in a document. You can specify the quantity, price, and other details for each product.[Detail here](_docs/shop/documentProduct.md)
 
 **Stock**: Allows you to manage the inventory of your products in different deposits. You can view the stock levels of each product in each deposit.[Detail here](_docs/shop/stock.md)
+
+![](_docs/shop/gifs/stock.gif)
 
 **StockMovement**: Allows you to manage the movements of your stock, such as when products are received or shipped out of a particular deposit.[Detail here](_docs/shop/stockMovement.md)
 
