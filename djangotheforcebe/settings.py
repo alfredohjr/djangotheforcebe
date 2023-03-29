@@ -172,3 +172,13 @@ SIMPLE_JWT = {
 }
 
 DATE_FORMAT = 'Y-m-d'
+
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header'
+        }
+   }
+}
